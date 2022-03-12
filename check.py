@@ -30,7 +30,7 @@ class Problem:
     def check(self):
         assert len(self.meetings_to_do) == 0
         assert self.steps == (self.num_people - 1)
-        print("Good solution for {} people".format(self.num_people))
+        print(self.num_people)
         print("".join(self.solution))
 
 def check_file(filename):
