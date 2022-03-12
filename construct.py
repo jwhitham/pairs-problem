@@ -48,3 +48,4 @@ if __name__ == "__main__":
         p = AutoProblem(i)
         p.auto_allocate_full()
         p.check()
+        p.show()

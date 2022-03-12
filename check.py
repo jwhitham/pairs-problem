@@ -50,6 +50,8 @@ class Problem:
     def check(self):
         assert len(self.meetings_to_do) == 0
         assert self.steps == (self.num_people - 1)
+
+    def show(self):
         if self.even_number:
             print(self.num_people)
         else:
@@ -68,6 +70,7 @@ def check_file(filename):
         elif line[0].isdigit():
             if problem:
                 problem.check()
+                problem.show()
             num_people = int(line)
             problem = Problem(num_people)
             problems.append(problem)
@@ -77,6 +80,7 @@ def check_file(filename):
         
     if problem:
         problem.check()
+        problem.show()
 
 if __name__ == "__main__":
     check_file("by_hand.txt")
