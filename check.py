@@ -7,14 +7,30 @@ class Problem:
         self.meetings_done = set()
         self.solution = []
         self.steps = 0
+        self.even_number = True
+
+        if (self.num_people % 2) == 1:
+            self.even_number = False
+            self.num_people += 1
+
         for a in range(self.num_people - 1):
             for b in range(a + 1, self.num_people):
                 self.meetings_to_do.add((a, b))
 
     def allocate(self, pairs):
         self.steps += 1
+        odd_pair = False
+        nobody = chr(self.num_people - 1 + ord('A'))
         for pair in pairs:
-            assert len(pair) == 2
+            if self.even_number:
+                assert len(pair) == 2
+            elif len(pair) == 1:
+                assert not odd_pair
+                odd_pair = True
+                pair += nobody
+            else:
+                assert len(pair) == 2
+
             a = ord(pair[0]) - ord('A')
             assert 0 <= a < (self.num_people - 1)
             b = ord(pair[1]) - ord('A')
@@ -23,14 +39,21 @@ class Problem:
             assert not ((a, b) in self.meetings_done)
             self.meetings_to_do.remove((a, b))
             self.meetings_done.add((a, b))
-            self.solution.append(pair)
+
+            if (not self.even_number) and (pair[-1] == nobody):
+                self.solution.append(pair[0])
+            else:
+                self.solution.append(pair)
             self.solution.append(" ")
         self.solution.append("\n")
 
     def check(self):
         assert len(self.meetings_to_do) == 0
         assert self.steps == (self.num_people - 1)
-        print(self.num_people)
+        if self.even_number:
+            print(self.num_people)
+        else:
+            print(self.num_people - 1)
         print("".join(self.solution))
 
 def check_file(filename):

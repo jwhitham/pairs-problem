@@ -44,7 +44,7 @@ class AutoProblem(Problem):
             self.auto_allocate_once()
 
 if __name__ == "__main__":
-    for i in range(2, 19, 2):
+    for i in range(2, 21, 1):
         p = AutoProblem(i)
         p.auto_allocate_full()
         p.check()

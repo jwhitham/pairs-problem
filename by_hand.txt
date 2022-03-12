@@ -1,6 +1,11 @@
 2
 AB
 
+3
+AB C
+AC B
+BC A
+
 4
 AB CD
 AC BD
