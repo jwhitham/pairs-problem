@@ -75,4 +75,4 @@ def solve(file_name) -> None:
 
 
 if __name__ == "__main__":
-    solve("input.txt")
+    solve("test.txt")
