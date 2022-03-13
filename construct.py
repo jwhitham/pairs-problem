@@ -8,6 +8,7 @@ class AutoProblem(Problem):
         pairs = []
         already_busy = [False for i in range(self.num_people)]
         num_pairs = self.num_people // 2
+        best = []
 
         def allocate_next(index_start):
             for j in range(index_start, len(can_do)):
@@ -19,8 +20,11 @@ class AutoProblem(Problem):
                 already_busy[a] = True
                 already_busy[b] = True
 
-                if len(pairs) == num_pairs:
-                    return True
+                if len(pairs) > len(best):
+                    best.clear()
+                    best.extend(pairs)
+                    if len(pairs) == num_pairs:
+                        return True
 
                 if allocate_next(j + 1):
                     return True
@@ -31,12 +35,10 @@ class AutoProblem(Problem):
 
             return False
 
-        rc = allocate_next(0)
-        assert rc
-        assert len(pairs) == num_pairs
+        allocate_next(0)
 
         self.allocate([chr(a + ord('A')) + chr(b + ord('A'))
-                            for (a, b) in pairs])
+                            for (a, b) in best])
 
 
     def auto_allocate_full(self):

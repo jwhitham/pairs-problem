@@ -4,29 +4,40 @@ import configparser
 
 
 class Person:
-    def __init__(self, name):
+    def __init__(self, name, number):
         self.name = name
         self.meeting_sequence = []
         self.already_met = set()
+        self.number = number
 
     def show(self):
         print(self.name)
+        i = 0
         for p2 in self.meeting_sequence:
-            print(" meets ", p2.name)
+            i += 1
+            print("  round {} meets {}".format(i, p2.name))
 
-NOBODY = Person("nobody")
+NOBODY = Person("nobody", -1)
 
 class PersonProblem(AutoProblem):
-    def __init__(self, people_by_name):
-        AutoProblem.__init__(self, len(people_by_name))
-        self.people_by_number = []
-        for name in sorted(people_by_name):
-            self.people_by_number.append(people_by_name[name])
+    def __init__(self, people):
+        AutoProblem.__init__(self, len(people))
+        self.people_by_number = dict()
+        for p in people.values():
+            self.people_by_number[p.number] = p
+
+        for p in people.values():
+            for p2 in p.already_met:
+                pair = (p.number, p2.number)
+                if p.number < p2.number:
+                    self.meetings_to_do.discard(pair)
+                    self.meetings_done.add(pair)
+
 
     def auto_allocate_full(self):
         AutoProblem.auto_allocate_full(self)
 
-        for p in self.people_by_number:
+        for p in self.people_by_number.values():
             p.meeting_sequence = []
 
         for line in self.solution:
@@ -41,7 +52,7 @@ class PersonProblem(AutoProblem):
                     a.meeting_sequence.append(NOBODY)
             
     def show(self):
-        for p in self.people_by_number:
+        for p in self.people_by_number.values():
             p.show()
         
 
@@ -50,8 +61,8 @@ def solve(file_name) -> None:
     parser.read(file_name)
 
     people = dict()
-    for name1 in parser.sections():
-        people[name1.lower()] = Person(name1)
+    for (number1, name1) in enumerate(sorted(parser.sections())):
+        people[name1.lower()] = Person(name1, number1)
         
     for name1 in parser.sections():
         for name2 in parser.options(name1):
