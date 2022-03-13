@@ -35,7 +35,7 @@ class Problem:
             assert 0 <= a < (self.num_people - 1)
             b = ord(pair[1]) - ord('A')
             assert a < b < self.num_people
-            assert (a, b) in self.meetings_to_do
+            assert (a, b) in self.meetings_to_do, (self.steps, pair)
             assert not ((a, b) in self.meetings_done)
             self.meetings_to_do.remove((a, b))
             self.meetings_done.add((a, b))
