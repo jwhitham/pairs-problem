@@ -108,13 +108,18 @@ class Problem:
         out.append("valid solution? {}\n".format(self.validate()))
 
         final_round = 0
+        present = 0
         for p1 in self.people:
-            for (i, p2) in enumerate(p1.schedule):
-                if (i > final_round) and (p2 is not NOBODY):
-                    final_round = i
+            if p1.is_present:
+                present += 1
+                for (i, p2) in enumerate(p1.schedule):
+                    if (i > final_round) and (p2 is not NOBODY):
+                        final_round = i
 
         num_rounds = final_round + 1
-        out.append("number of rounds {}\n\n".format(num_rounds))
+        out.append("number of rounds {}\n".format(num_rounds))
+        out.append("number of people present {}\n".format(present))
+        out.append("number of people absent {}\n\n".format(len(self.people) - present))
 
         for p1 in self.people:
             out.append(p1.name)
