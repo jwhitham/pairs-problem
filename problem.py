@@ -44,6 +44,8 @@ class Problem:
             for p2 in p1.schedule:
                 if p2 is NOBODY:
                     continue
+                if (not p1.is_present) or (not p2.is_present):
+                    return False
                 if not (p2 in all_people):
                     return False
                 if p2 in met:
@@ -102,18 +104,28 @@ class Problem:
 
     def to_text(self) -> str:
         out: typing.List[str] = []
+
+        out.append("valid solution? {}\n".format(self.validate()))
+
         num_rounds = 0
+        for p1 in self.people:
+            num_rounds = max(num_rounds, len(p1.schedule))
+        out.append("number of rounds {}\n\n".format(num_rounds))
+
         for p1 in self.people:
             out.append(p1.name)
             out.append("\n")
             out.append("-" * len(p1.name))
             out.append("\n\n")
-            for p2 in p1.already_met:
-                out.append("already met {}\n".format(p2.name))
-            for (i, p2) in enumerate(p1.schedule):
-                out.append("meet {} in round {}\n".format(p2.name, i + 1))
+            if p1.is_present:
+                for p2 in p1.already_met:
+                    out.append("already met {}\n".format(p2.name))
+                for (i, p2) in enumerate(p1.schedule):
+                    out.append("meet {} in round {}\n".format(p2.name, i + 1))
+            else:
+                out.append("not present\n")
+
             out.append("\n")
-            num_rounds = max(num_rounds, len(p1.schedule))
 
         for r in range(num_rounds):
             rname = "Round {}".format(r + 1)
