@@ -1,6 +1,7 @@
 
 import collections
 from problem import Problem, MAX_NAMES
+from solve import solve
 
 from google.auth.transport.requests import Request      # type: ignore
 from google.oauth2.credentials import Credentials       # type: ignore
@@ -50,6 +51,9 @@ def main() -> None:
                 values2[(x, y)] = col
 
         problem = Problem.from_spreadsheet(values2, cell_name_fn)
+        #print(problem.to_text())
+        #print(problem.to_dict())
+        solve(problem)
         print(problem.to_text())
 
 

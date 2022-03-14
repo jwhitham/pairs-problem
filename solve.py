@@ -1,78 +1,118 @@
 
-from construct import AutoProblem
-import configparser
+import typing
+
+from problem import Problem, Person, NOBODY
+
+class Solver:
+    def __init__(self, problem: Problem) -> None:
+        self.problem = problem
+        self.problem.reset()
+
+        # Filter out people who are not present
+        self.my_people: typing.List[Person] = []
+        for p1 in self.problem.people:
+            if p1.is_present:
+                self.my_people.append(p1)
+
+        # Number of people is padded to an even number with NOBODY
+        self.num_people = len(self.my_people)
+        if (self.num_people % 2) == 1:
+            self.num_people += 1
+            self.my_people.append(NOBODY)
+
+        self.num_pairs = self.num_people // 2
+
+        # Met matrix - true if people have met
+        self.met: typing.List[typing.List[bool]] = []
+        for a in range(self.num_people):
+            self.met.append([False for b in range(self.num_people)])
+
+        # Merge already_met into matrix
+        self.already_met: typing.Set[typing.Tuple[int, int]] = set()
+        for a in range(self.num_people):
+            p1 = self.my_people[a]
+            for p2 in p1.already_met:
+                try:
+                    b = self.my_people.index(p2)
+                except ValueError:
+                    b = -1
+                if (b >= 0) and (p1 is not NOBODY) and (p2 is not NOBODY):
+                    self.met[a][b] = True
+                    self.met[b][a] = True
+
+        # How many meetings haven't happened yet?
+        self.num_meetings_todo = 0
+        for a in range(self.num_people):
+            for b in range(a + 1, self.num_people):
+                if not self.met[a][b]:
+                    self.num_meetings_todo += 1
+
+        self.reset()
+
+    def reset(self) -> None:
+        # Prepare to solve
+        self.pairs: typing.List[typing.Tuple[int, int]] = []
+        self.best_pairs: typing.List[typing.Tuple[int, int]] = []
+        self.busy: typing.List[bool] = [
+                False for i in range(self.num_people)]
 
 
-class Person:
-    def __init__(self, name, number):
-        self.name = name
-        self.meeting_sequence = []
-        self.already_met = set()
-        self.number = number
+    def allocate_next(self, a: int, b: int) -> bool:
+        while a < self.num_people:
+            if not self.busy[a]:
+                # a can be allocated
+                while b < self.num_people:
+                    if ((not self.busy[b]) and not self.met[a][b]):
+                        # b can be allocated
+                        assert a < b
+                        self.pairs.append((a, b))
+                        self.busy[a] = True
+                        self.busy[b] = True
 
-    def show(self):
-        print(self.name)
-        i = 0
-        for p2 in self.meeting_sequence:
-            i += 1
-            print("  round {} meets {}".format(i, p2.name))
+                        if len(self.pairs) > len(self.best_pairs):
+                            self.best_pairs.clear()
+                            self.best_pairs.extend(self.pairs)
+                            if len(self.pairs) == self.num_pairs:
+                                return True
 
-NOBODY = Person("nobody", -1)
+                        if self.allocate_next(a, b):
+                            return True
 
-class PersonProblem(AutoProblem):
-    def __init__(self, people):
-        AutoProblem.__init__(self, len(people))
-        self.people_by_number = dict()
-        for p in people.values():
-            self.people_by_number[p.number] = p
+                        self.pairs.pop()
+                        self.busy[a] = False
+                        self.busy[b] = False
 
-        for p in people.values():
-            for p2 in p.already_met:
-                pair = (p.number, p2.number)
-                if p.number < p2.number:
-                    self.meetings_to_do.discard(pair)
-                    self.meetings_done.add(pair)
+                    # advance to next b
+                    b += 1
 
+            # advance to next a
+            a += 1
+            b = a + 1
 
-    def auto_allocate_full(self):
-        AutoProblem.auto_allocate_full(self)
+        # No complete solution was found
+        return False
 
-        for p in self.people_by_number.values():
-            p.meeting_sequence = []
+    def solve(self) -> None:
+        while self.num_meetings_todo > 0:
+            self.reset()
+            self.allocate_next(0, 1)
 
-        for line in self.solution:
-            for pair in line.split():
-                assert 1 <= len(pair) <= 2
-                a = self.people_by_number[ord(pair[0]) - ord('A')]
-                if len(pair) > 1:
-                    b = self.people_by_number[ord(pair[1]) - ord('A')]
-                    a.meeting_sequence.append(b)
-                    b.meeting_sequence.append(a)
-                else:
-                    a.meeting_sequence.append(NOBODY)
-            
-    def show(self):
-        for p in self.people_by_number.values():
-            p.show()
-        
+            assert len(self.best_pairs) != 0
 
-def solve(file_name) -> None:
-    parser = configparser.ConfigParser(allow_no_value=True)
-    parser.read(file_name)
+            for (a, b) in self.best_pairs:
+                assert a < b
+                assert not self.met[a][b]
+                assert not self.met[b][a]
+                self.met[a][b] = True
+                self.met[b][a] = True
+                self.num_meetings_todo -= 1
+                assert self.num_meetings_todo >= 0
+                p1 = self.my_people[a]
+                p2 = self.my_people[b]
+                if p1 is not NOBODY:
+                    p1.schedule.append(p2)
+                if p2 is not NOBODY:
+                    p2.schedule.append(p1)
 
-    people = dict()
-    for (number1, name1) in enumerate(sorted(parser.sections())):
-        people[name1.lower()] = Person(name1, number1)
-        
-    for name1 in parser.sections():
-        for name2 in parser.options(name1):
-            people[name1.lower()].already_met.add(people[name2.lower()])
-            people[name2.lower()].already_met.add(people[name1.lower()])
-
-    pp = PersonProblem(people) 
-    pp.auto_allocate_full()
-    pp.show()
-
-
-if __name__ == "__main__":
-    solve("test.txt")
+def solve(problem: Problem) -> None:
+    Solver(problem).solve()

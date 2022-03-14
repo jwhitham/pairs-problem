@@ -107,9 +107,13 @@ class Problem:
 
         out.append("valid solution? {}\n".format(self.validate()))
 
-        num_rounds = 0
+        final_round = 0
         for p1 in self.people:
-            num_rounds = max(num_rounds, len(p1.schedule))
+            for (i, p2) in enumerate(p1.schedule):
+                if (i > final_round) and (p2 is not NOBODY):
+                    final_round = i
+
+        num_rounds = final_round + 1
         out.append("number of rounds {}\n\n".format(num_rounds))
 
         for p1 in self.people:
@@ -138,7 +142,7 @@ class Problem:
                 if len(p1.schedule) > r:
                     p2 = p1.schedule[r]
 
-                if (p2 is not NOBODY) and (p1.name > p2.name):
+                if (p2 is not NOBODY) and (p1.name < p2.name):
                     out.append("{} meets {}\n".format(p1.name, p2.name))
 
             out.append("\n")
