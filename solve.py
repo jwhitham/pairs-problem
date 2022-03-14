@@ -93,9 +93,11 @@ class Solver:
         return False
 
     def solve(self) -> None:
+        num_rounds = 0
         while self.num_meetings_todo > 0:
             self.reset()
             self.allocate_next(0, 1)
+            num_rounds += 1
 
             assert len(self.best_pairs) != 0
 
@@ -113,6 +115,13 @@ class Solver:
                     p1.schedule.append(p2)
                 if p2 is not NOBODY:
                     p2.schedule.append(p1)
+
+            for p1 in self.my_people:
+                assert len(p1.schedule) <= num_rounds
+                assert (num_rounds - 1) <= len(p1.schedule)
+                if len(p1.schedule) == (num_rounds - 1):
+                    p1.schedule.append(NOBODY)
+
 
 def solve(problem: Problem) -> None:
     Solver(problem).solve()
