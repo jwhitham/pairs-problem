@@ -31,13 +31,17 @@ class Problem:
 
     def validate(self) -> bool:
         all_people = set(self.people)
+
+        # Check each person individually
         for p1 in self.people:
             met = set()
             met.add(p1)
             for p2 in p1.already_met:
                 if not (p2 in all_people):
+                    # Already met someone we don't know
                     return False
                 if p2 in met:
+                    # Already met someone twice
                     return False
                 met.add(p2)
 
@@ -45,15 +49,31 @@ class Problem:
                 if p2 is NOBODY:
                     continue
                 if (not p1.is_present) or (not p2.is_present):
+                    # Met someone who isn't present
                     return False
                 if not (p2 in all_people):
+                    # Met someone we don't know
                     return False
                 if p2 in met:
+                    # Met someone twice
                     return False
                 met.add(p2)
 
+            # Each person should have met all other people once
             if met != all_people:
                 return False
+
+        # Check consistency of schedules
+        for p1 in self.people:
+            for (i, p2) in enumerate(p1.schedule):
+                if p2 is NOBODY:
+                    continue
+                if len(p2.schedule) <= i:
+                    # p2's schedule is too short
+                    return False
+                if p2.schedule[i] != p1:
+                    # p2 doesn't meet p1 at time i - schedule doesn't match
+                    return False
 
         return True
 
@@ -170,13 +190,14 @@ class Problem:
     def from_dict(d: typing.Dict[str, typing.Any]) -> "Problem":
         self = Problem()
         lookup: typing.Dict[str, Person] = dict()
-        lookup[""] = NOBODY
+        lookup[NOBODY.name] = NOBODY
         for pd in d["people"]:
             p = Person(pd["name"], pd["is_present"])
             self.people.append(p)
             lookup[p.name] = p
 
         for pd in d["people"]:
+            p = lookup[pd["name"]]
             for n in pd["already_met"]:
                 p.already_met.append(lookup[n])
             for n in pd["schedule"]:
