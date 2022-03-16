@@ -63,16 +63,37 @@ class Problem:
             if met != all_people:
                 return False
 
-        # Check consistency of schedules
+        # Check consistent schedule length
+        size = 0
+        for p1 in self.people:
+            if p1.is_present:
+                size = len(p1.schedule)
+                break
+
+        for p1 in self.people:
+            if p1.is_present:
+                if size != len(p1.schedule):
+                    # Schedule size differs
+                    return False
+            else:
+                if 0 != len(p1.schedule):
+                    # Schedule size should be 0 when not present
+                    return False
+
+        # Check consistent schedule relationships
         for p1 in self.people:
             for (i, p2) in enumerate(p1.schedule):
                 if p2 is NOBODY:
                     continue
-                if len(p2.schedule) <= i:
-                    # p2's schedule is too short
-                    return False
                 if p2.schedule[i] != p1:
                     # p2 doesn't meet p1 at time i - schedule doesn't match
+                    return False
+
+        # Check consistent already_met relationships
+        for p1 in self.people:
+            for p2 in p1.already_met:
+                if not (p1 in p2.already_met):
+                    # p1 met p2, but p2 didn't meet p1?
                     return False
 
         return True

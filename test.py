@@ -1,5 +1,6 @@
 
 import json
+import random
 
 from problem import Problem, Person, NOBODY
 from solve import solve
@@ -78,3 +79,83 @@ def test_save_load() -> None:
                     assert (NOBODY in person.schedule)
                 for person2 in problem.people:
                     assert (person2 == person) or (person2 in person.schedule)
+
+
+def test_all_already_met() -> None:
+    # In this situation everyone already met! So there is nothing to do.
+    problem = Problem()
+    for i in range(8):
+        problem.people.append(Person(str(i), True))
+    for p1 in problem.people:
+        for p2 in problem.people:
+            if p2 != p1:
+                p1.already_met.append(p2)
+
+    assert problem.validate()
+    solved = problem.to_text()
+
+    solve(problem)
+
+    assert problem.validate()
+    assert solved == problem.to_text()
+
+    tmp = json.dumps(problem.to_dict())
+    problem = Problem.from_dict(json.loads(tmp))
+
+    assert problem.validate()
+    assert solved == problem.to_text()
+
+    solve(problem)
+
+    assert problem.validate()
+    assert solved == problem.to_text()
+
+def test_some_already_met() -> None:
+    # In this situation some people already met
+    r = random.Random(1)
+    for scenario in range(100):
+        problem = Problem()
+        for i in range(8):
+            problem.people.append(Person(str(i), True))
+        for p1 in problem.people:
+            for p2 in problem.people:
+                if (p2.name > p1.name) and (r.random() >= 0.5):
+                    p1.already_met.append(p2)
+                    p2.already_met.append(p1)
+
+        print(problem.to_text())
+        solve(problem)
+
+        assert problem.validate()
+        for person in problem.people:
+            assert len(person.schedule) <= 7
+
+def test_ysj() -> None:
+    # (a) 18 people organised themselves into a horseshoe double ring.
+    # They rotated - inner ring clockwise, outer ring anti-clockwise.
+    # After some iterations, they found that everyone was talking to someone
+    # they had already met.
+    # (b) They stopped and attempted to assign pairs by hand.
+    # It turned out to be very hard to figure out an optimal pairing and
+    # some people were left out.
+    # (c) Then we wrote this program to try to come up with the best solution.
+
+    # In this situation some people already met
+    r = random.Random(1)
+    for scenario in range(100):
+        problem = Problem()
+        for i in range(8):
+            problem.people.append(Person(str(i), True))
+        for p1 in problem.people:
+            for p2 in problem.people:
+                if (p2.name > p1.name) and (r.random() >= 0.5):
+                    p1.already_met.append(p2)
+                    p2.already_met.append(p1)
+
+        print(problem.to_text())
+        solve(problem)
+
+        assert problem.validate()
+        for person in problem.people:
+            assert len(person.schedule) <= 7
+
