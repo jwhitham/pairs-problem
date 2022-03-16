@@ -134,81 +134,105 @@ def test_some_already_met() -> None:
             assert len(person.schedule) <= 7
 
 def test_ysj() -> None:
-    # (a) Some people organised themselves into a horseshoe double ring.
-    # They rotated - inner ring clockwise, outer ring anti-clockwise.
-    # After some iterations, they found that everyone was talking to someone
-    # they had already met.
-    # (b) They stopped and attempted to assign pairs by hand.
-    # It turned out to be very hard to figure out an optimal pairing and
-    # some people were left out.
-    # (c) Then we wrote this program to try to come up with the best solution.
-    problem = Problem()
-    r = random.Random(1)
-    num_people = 18
-    for i in range(num_people):
-        problem.people.append(Person('{:03d}'.format(i), True))
+    for scenario in range(2):
+        # (a) Some people organised themselves into a horseshoe double ring.
+        # They rotated - inner ring clockwise, outer ring anti-clockwise.
+        # After some iterations, they found that everyone was talking to someone
+        # they had already met.
+        # (b) They stopped and attempted to assign pairs by hand.
+        # It turned out to be very hard to figure out an optimal pairing and
+        # some people were left out.
+        # (c) Then we wrote this program to try to come up with the best solution.
+        problem = Problem()
+        r = random.Random(1)
+        num_people = 18
+        for i in range(num_people):
+            problem.people.append(Person('{:03d}'.format(i), True))
 
-    horseshoe = problem.people[:]
-    met: typing.Set[typing.Tuple[str, str]] = set()
+        horseshoe = problem.people[:]
+        met: typing.Set[typing.Tuple[str, str]] = set()
 
-    # (a) the horseshoe
-    for step in range(num_people // 2):
-        # Everybody meets
+        # (a) the horseshoe
+        for step in range(num_people // 2):
+            # Everybody meets
+            for chair in range(num_people // 2):
+                p1 = horseshoe[chair]
+                p2 = horseshoe[len(horseshoe) - 1 - chair]
+                assert not (p1.name, p2.name) in met
+                p1.already_met.append(p2)
+                p2.already_met.append(p1)
+                met.add((p1.name, p2.name))
+                met.add((p2.name, p1.name))
+            # Rotate
+            horseshoe.append(horseshoe.pop(0))
+
+        # Now, everyone is facing someone they already met
         for chair in range(num_people // 2):
             p1 = horseshoe[chair]
             p2 = horseshoe[len(horseshoe) - 1 - chair]
-            assert not (p1.name, p2.name) in met
-            p1.already_met.append(p2)
-            p2.already_met.append(p1)
-            met.add((p1.name, p2.name))
-            met.add((p2.name, p1.name))
-        # Rotate
-        horseshoe.append(horseshoe.pop(0))
+            assert (p1.name, p2.name) in met
 
-    # Now, everyone is facing someone they already met
-    for chair in range(num_people // 2):
-        p1 = horseshoe[chair]
-        p2 = horseshoe[len(horseshoe) - 1 - chair]
-        assert (p1.name, p2.name) in met
+        # (b) each person picks someone they haven't met (at the same time)
+        pairing: typing.List[typing.Tuple[Person, Person]] = []
+        for p1 in problem.people:
+            r.shuffle(horseshoe)
+            for p2 in horseshoe:
+                if (p1 is not p2) and ((p1.name, p2.name) not in met):
+                    pairing.append((p1, p2))
+                    break
 
-    # (b) each person picks someone they haven't met (at the same time)
-    pairing: typing.List[typing.Tuple[Person, Person]] = []
-    for p1 in problem.people:
-        r.shuffle(horseshoe)
-        for p2 in horseshoe:
-            if (p1 is not p2) and ((p1.name, p2.name) not in met):
-                pairing.append((p1, p2))
-                break
+        r.shuffle(pairing)
+        # assign pairs as far as possible
+        busy: typing.Set[str] = set()
+        for (p1, p2) in pairing:
+            if (p1.name not in busy) and (p2.name not in busy):
+                # p1 and p2 meet!
+                # But in doing so, they prevent other meetings
+                assert (p1.name, p2.name) not in met
+                p1.already_met.append(p2)
+                p2.already_met.append(p1)
+                met.add((p1.name, p2.name))
+                met.add((p2.name, p1.name))
+                busy.add(p1.name)
+                busy.add(p2.name)
 
-    r.shuffle(pairing)
-    # assign pairs as far as possible
-    busy: typing.Set[str] = set()
-    for (p1, p2) in pairing:
-        if (p1.name not in busy) and (p2.name not in busy):
-            # p1 and p2 meet!
-            # But in doing so, they prevent other meetings
-            assert (p1.name, p2.name) not in met
-            p1.already_met.append(p2)
-            p2.already_met.append(p1)
-            met.add((p1.name, p2.name))
-            met.add((p2.name, p1.name))
-            busy.add(p1.name)
-            busy.add(p2.name)
+        # A few people are left out
+        assert len(busy) > 0
+        assert len(busy) < num_people
+        assert len(busy) <= (num_people - 2)
 
-    # A few people are left out
-    assert len(busy) > 0
-    assert len(busy) < num_people
-    assert len(busy) <= (num_people - 2)
+        # Scenario 1: Someone was off sick and now joins the problem
+        latecomer = Person('{:03d}'.format(num_people), True)
+        if scenario == 1:
+            problem.people.append(latecomer)
 
-    # Someone was off sick and now joins the problem
-    problem.people.append(Person('{:03d}'.format(num_people), True))
+        # (c) Then we wrote this program to try to come up with the best solution.
+        assert problem.validate_problem()
+        assert not problem.validate_solution()
+        solve(problem)
+        assert problem.validate_solution()
 
-    # (c) Then we wrote this program to try to come up with the best solution.
-    assert problem.validate_problem()
-    assert not problem.validate_solution()
-    solve(problem)
-    assert problem.validate_solution()
+        # Scenario 1: Stop meetings when the only meetings involve the latecomer
+        endpoint = 0
+        for p1 in problem.people:
+            if p1 is latecomer:
+                continue
 
-    print(problem.to_text())
+            for i in range(len(p1.schedule)):
+                if ((p1.schedule[i] is not NOBODY)
+                        and (p1.schedule[i] is not latecomer)):
+                    endpoint = max(endpoint, i)
 
-    assert False 
+        # Work out the boredom factor
+        max_bored = 0
+        for p1 in problem.people:
+            bored = 0
+            for p2 in p1.schedule[:endpoint + 1]:
+                if p2 is NOBODY:
+                    max_bored = max(bored, max_bored)
+                    bored += 1
+                else:
+                    bored = 0
+
+        # Nobody has to wait for more than two rounds
+        assert max_bored <= 2, scenario
