@@ -17,10 +17,11 @@ def test_simple() -> None:
         assert len(problem.people) == num_people
 
         assert len(NOBODY.schedule) == 0
-        assert (num_people < 2) or not problem.validate()
+        assert problem.validate_problem()
+        assert (num_people < 2) or not problem.validate_solution()
         solve(problem)
         assert len(NOBODY.schedule) == 0
-        assert problem.validate()
+        assert problem.validate_solution()
 
         all_people = set(problem.people)
         if (num_people % 2) == 1:
@@ -49,26 +50,28 @@ def test_save_load() -> None:
             assert len(problem.people) == num_people
 
             unsolved = problem.to_text()
-            assert not problem.validate()
+            assert problem.validate_problem()
+            assert not problem.validate_solution()
 
             if scenario & 2:
                 tmp = json.dumps(problem.to_dict())
                 problem = Problem.from_dict(json.loads(tmp))
 
             assert unsolved == problem.to_text()
-            assert not problem.validate()
+            assert problem.validate_problem()
+            assert not problem.validate_solution()
 
             solve(problem)
 
             solved = problem.to_text()
-            assert problem.validate()
+            assert problem.validate_solution()
 
             if scenario & 1:
                 tmp = json.dumps(problem.to_dict())
                 problem = Problem.from_dict(json.loads(tmp))
 
             assert solved == problem.to_text()
-            assert problem.validate()
+            assert problem.validate_solution()
 
             for person in problem.people:
                 if num_people == 8:
@@ -91,23 +94,23 @@ def test_all_already_met() -> None:
             if p2 != p1:
                 p1.already_met.append(p2)
 
-    assert problem.validate()
+    assert problem.validate_solution()
     solved = problem.to_text()
 
     solve(problem)
 
-    assert problem.validate()
+    assert problem.validate_solution()
     assert solved == problem.to_text()
 
     tmp = json.dumps(problem.to_dict())
     problem = Problem.from_dict(json.loads(tmp))
 
-    assert problem.validate()
+    assert problem.validate_solution()
     assert solved == problem.to_text()
 
     solve(problem)
 
-    assert problem.validate()
+    assert problem.validate_solution()
     assert solved == problem.to_text()
 
 def test_some_already_met() -> None:
@@ -123,10 +126,9 @@ def test_some_already_met() -> None:
                     p1.already_met.append(p2)
                     p2.already_met.append(p1)
 
-        print(problem.to_text())
         solve(problem)
 
-        assert problem.validate()
+        assert problem.validate_solution()
         for person in problem.people:
             assert len(person.schedule) <= 7
 
@@ -152,10 +154,9 @@ def test_ysj() -> None:
                     p1.already_met.append(p2)
                     p2.already_met.append(p1)
 
-        print(problem.to_text())
         solve(problem)
 
-        assert problem.validate()
+        assert problem.validate_solution()
         for person in problem.people:
             assert len(person.schedule) <= 7
 

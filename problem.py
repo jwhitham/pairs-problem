@@ -29,13 +29,27 @@ class Problem:
         for p in self.people:
             p.schedule.clear()
 
-    def validate(self) -> bool:
+    def validate_problem(self) -> bool:
+        return self.validate(problem_only=True)
+
+    def validate_solution(self) -> bool:
+        return self.validate(problem_only=False)
+
+    def validate(self, problem_only: bool) -> bool:
         all_people = set(self.people)
+        names_seen: typing.Set[str] = set()
+
+        # The people list elements must be unique
+        if len(all_people) != len(self.people):
+            return False
 
         # Check each person individually
         for p1 in self.people:
             met = set()
             met.add(p1)
+            if p1 is NOBODY:
+                return False
+
             for p2 in p1.already_met:
                 if not (p2 in all_people):
                     # Already met someone we don't know
@@ -60,8 +74,14 @@ class Problem:
                 met.add(p2)
 
             # Each person should have met all other people once
-            if met != all_people:
+            if (met != all_people) and not problem_only:
                 return False
+
+            # Person must have a valid name
+            if (p1.name == "") or (p1.name == NOBODY.name) or (p1.name in names_seen):
+                return False
+
+            names_seen.add(p1.name)
 
         # Check consistent schedule length
         size = 0
@@ -146,7 +166,8 @@ class Problem:
     def to_text(self) -> str:
         out: typing.List[str] = []
 
-        out.append("valid solution? {}\n".format(self.validate()))
+        out.append("valid problem? {}\n".format(self.validate_problem()))
+        out.append("valid solution? {}\n".format(self.validate_solution()))
 
         final_round = 0
         present = 0
