@@ -49,6 +49,14 @@ def main() -> None:
         #print(problem.to_text())
         #print(problem.to_dict())
         solve(problem)
+        values = problem.to_spreadsheet()
+
+        sheet.values().update(spreadsheetId=spreadsheet_id,
+                range="Output!{}:{}".format(
+                        cell_name_fn((0, 0)),
+                        cell_name_fn((MAX_NAMES + 1, MAX_NAMES))),
+                valueInputOption="RAW",
+                body={"values": values.values}).execute()
 
 
         print(problem.to_text())
