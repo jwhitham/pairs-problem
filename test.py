@@ -3,7 +3,7 @@ import json
 import random
 import typing
 
-from problem import Problem, Person, NOBODY
+from problem import Problem, Person, NOBODY, Cell
 from solve import solve
 
 def test_simple() -> None:
@@ -41,10 +41,11 @@ def test_simple() -> None:
                     assert person2.schedule[i] == person
 
 def test_save_load() -> None:
-    # The solver must still work if the solution is passed through JSON.
+    # The solver must still work if the problem and
+    # solution are passed through JSON or the spreadsheet encoder.
     # The same answer is expected
     for num_people in range(8, 10):
-        for scenario in range(4):
+        for scenario in range(16):
             problem = Problem()
             for i in range(num_people):
                 problem.people.append(Person(chr(ord('Z') - i), True))
@@ -54,9 +55,12 @@ def test_save_load() -> None:
             assert problem.validate_problem()
             assert not problem.validate_solution()
 
-            if scenario & 2:
+            if scenario & 1:
                 tmp = json.dumps(problem.to_dict())
                 problem = Problem.from_dict(json.loads(tmp))
+            if scenario & 2:
+                problem = Problem.from_spreadsheet(
+                        problem.to_spreadsheet(), repr)
 
             assert unsolved == problem.to_text()
             assert problem.validate_problem()
@@ -67,9 +71,12 @@ def test_save_load() -> None:
             solved = problem.to_text()
             assert problem.validate_solution()
 
-            if scenario & 1:
+            if scenario & 4:
                 tmp = json.dumps(problem.to_dict())
                 problem = Problem.from_dict(json.loads(tmp))
+            if scenario & 8:
+                problem = Problem.from_spreadsheet(
+                        problem.to_spreadsheet(), repr)
 
             assert solved == problem.to_text()
             assert problem.validate_solution()
@@ -83,7 +90,6 @@ def test_save_load() -> None:
                     assert (NOBODY in person.schedule)
                 for person2 in problem.people:
                     assert (person2 == person) or (person2 in person.schedule)
-
 
 def test_all_already_met() -> None:
     # In this situation everyone already met! So there is nothing to do.
@@ -133,7 +139,7 @@ def test_some_already_met() -> None:
         for person in problem.people:
             assert len(person.schedule) <= 7
 
-def test_ysj() -> None:
+def Xtest_ysj() -> None:
     for scenario in range(2):
         # (a) Some people organised themselves into a horseshoe double ring.
         # They rotated - inner ring clockwise, outer ring anti-clockwise.

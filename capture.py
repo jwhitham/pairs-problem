@@ -1,6 +1,6 @@
 
 import collections
-from problem import Problem, MAX_NAMES
+from problem import Problem, MAX_NAMES, Cell, Spreadsheet
 from solve import solve
 
 from google.auth.transport.requests import Request      # type: ignore
@@ -17,7 +17,8 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 class CredentialsError(Exception):
     pass
 
-def cell_name_fn(column: int, row: int) -> str:
+def cell_name_fn(cell: Cell) -> str:
+    (column, row) = cell
     return chr(ord('A') + column) + str(row + 1)
 
 def main() -> None:
@@ -40,12 +41,12 @@ def main() -> None:
         # Get a copy of the sheet
         result = sheet.values().get(spreadsheetId=spreadsheet_id,
                 range="Input!{}:{}".format(
-                        cell_name_fn(0, 0),
-                        cell_name_fn(MAX_NAMES + 1, MAX_NAMES))).execute()
+                        cell_name_fn((0, 0)),
+                        cell_name_fn((MAX_NAMES + 1, MAX_NAMES)))).execute()
         values = result.get('values', [])
        
         # Convert to X, Y coordinates
-        values2 = collections.defaultdict(lambda: "")
+        values2: Spreadsheet = collections.defaultdict(lambda: "")
         for (y, row) in enumerate(values):
             for (x, col) in enumerate(row):
                 values2[(x, y)] = col
