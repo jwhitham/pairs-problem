@@ -1,5 +1,6 @@
 
 import collections
+import sys
 from problem import Problem, MAX_NAMES, Cell, Spreadsheet
 from solve import solve
 
@@ -19,7 +20,7 @@ class CredentialsError(Exception):
 
 def cell_name_fn(cell: Cell) -> str:
     (column, row) = cell
-    return chr(ord('A') + column) + str(row + 1)
+    return "R{}C{}".format(row + 1, column + 1)
 
 def main() -> None:
     spreadsheet_id = open("spreadsheet.id", "rt").read().strip()
@@ -54,7 +55,7 @@ def main() -> None:
         sheet.values().update(spreadsheetId=spreadsheet_id,
                 range="Output!{}:{}".format(
                         cell_name_fn((0, 0)),
-                        cell_name_fn((MAX_NAMES + 1, MAX_NAMES))),
+                        cell_name_fn(values.get_bottom_right())),
                 valueInputOption="RAW",
                 body={"values": values.values}).execute()
 
@@ -64,8 +65,6 @@ def main() -> None:
 
     except HttpError as err:
         print(err)
-
-
 
 if __name__ == '__main__':
     main()

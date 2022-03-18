@@ -48,6 +48,20 @@ class Spreadsheet:
 
         row[x] = value
 
+    def get_bottom_right(self) -> Cell:
+        x = 0
+        y = max(0, len(self.values) - 1)
+        for row in self.values:
+            x = max(len(row) - 1, x)
+
+        return (x, y)
+
+    def pad(self) -> None:
+        (x, y) = self.get_bottom_right()
+        for row in self.values:
+            while len(row) <= x:
+                row.append("")
+
 class Problem:
     def __init__(self) -> None:
         self.people: typing.List[Person] = []
@@ -179,8 +193,8 @@ class Problem:
         # Find out who already talked to whom
         for y in range(num_names):
             for x in range(num_names):
+                v = values[(2 + x, 1 + y)]
                 if x != y:
-                    v = values[(2 + x, 1 + y)]
                     if is_truthy(v):
                         people[x].already_met.append(people[y])
                         people[y].already_met.append(people[x])
@@ -195,6 +209,12 @@ class Problem:
                                         v, cell_name_fn((2 + x, 1 + y)))) from None
                         people[x].add_to_schedule(r - 1, people[y])
                         people[y].add_to_schedule(r - 1, people[x])
+                else:
+                    if is_truthy(v) or v.startswith("round "):
+                        raise CaptureError(
+                            "Cell {} should be blank".format(
+                                    cell_name_fn((2 + x, 1 + y))))
+
 
         # Normalise schedule length for all people who are present
         size = 0
@@ -222,20 +242,20 @@ class Problem:
             number[p1.name] = i
 
         # Initial state is unmet
-        for i in range(len(self.people)):
-            for j in range(len(self.people)):
-                values[(2 + j, 1 + i)] = "unmet"
-
-        # ...but nobody has met themselves
-        for i in range(len(self.people)):
-            values[(2 + i, 1 + i)] = "-"
+        for x in range(len(self.people)):
+            for y in range(len(self.people)):
+                if x > y:
+                    values[(2 + x, 1 + y)] = "unmet"
+                else:
+                    values[(2 + x, 1 + y)] = "-"
 
         # Fill in "already met"
         for p1 in self.people:
             a = number[p1.name]
             for p2 in p1.already_met:
                 b = number[p2.name]
-                values[(2 + a, 1 + b)] = "met"
+                if a > b:
+                    values[(2 + a, 1 + b)] = "met"
 
         # Fill in round numbers if available
         for p1 in self.people:
@@ -244,20 +264,20 @@ class Problem:
                 if p2 is NOBODY:
                     continue
                 b = number[p2.name]
-                values[(2 + a, 1 + b)] = "round {}".format(i + 1)
+                if a > b:
+                    values[(2 + a, 1 + b)] = "round {}".format(i + 1)
 
         # Create round table too
-        start = len(self.people) + 3
+        (_, start) = values.get_bottom_right()
+        start += 3
         size = 0
         for p1 in self.people:
             if p1.is_present:
                 size = max(size, len(p1.schedule))
 
-        if size == 0:
-            return values
-
-        for (i, p1) in enumerate(self.people):
-            values[(i + 1, start)] = p1.name
+        if size != 0:
+            for (i, p1) in enumerate(self.people):
+                values[(i + 1, start)] = p1.name
 
         values[(0, start)] = ""
         for i in range(size):
@@ -272,6 +292,16 @@ class Problem:
                     values[(j + 1, start + i + 1)] = "-"
                 else:
                     values[(j + 1, start + i + 1)] = p2.name
+
+        # Create alternate view of round table
+        (_, start) = values.get_bottom_right()
+        start += 3
+
+        # Padding at the bottom and on the right
+        (x, y) = values.get_bottom_right()
+        values[(0, y + 1)] = ""
+        values[(0, y + 2)] = ""
+        values.pad()
 
         return values
 
@@ -364,7 +394,7 @@ def is_truthy(text: str) -> bool:
         return False
 
     text = text.lower()
-    if text[0] in "-ufn0r":
+    if text[0] in "-ufn0rx":
         return False
 
     return True
