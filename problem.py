@@ -4,7 +4,6 @@ import typing
 MAX_NAMES = 24
 
 Cell = typing.Tuple[int, int]
-Spreadsheet = typing.Dict[Cell, str]
 
 class CaptureError(Exception):
     pass
@@ -22,6 +21,32 @@ class Person:
         self.schedule[round_number] = other
 
 NOBODY = Person("*nobody*", False)
+
+class Spreadsheet:
+    def __init__(self, values: typing.List[typing.List[str]] = []) -> None:
+        self.values: typing.List[typing.List[str]] = values
+
+    def __getitem__(self, cell: Cell) -> str:
+        (x, y) = cell
+        if not (0 <= y < len(self.values)):
+            return ""
+
+        row = self.values[y]
+        if not (0 <= x < len(row)):
+            return ""
+
+        return row[x]
+
+    def __setitem__(self, cell: Cell, value: str) -> None:
+        (x, y) = cell
+        while len(self.values) <= y:
+            self.values.append([])
+
+        row = self.values[y]
+        while len(row) <= x:
+            row.append("")
+
+        row[x] = value
 
 class Problem:
     def __init__(self) -> None:
@@ -122,18 +147,18 @@ class Problem:
 
 
     @staticmethod
-    def from_spreadsheet(values2: Spreadsheet,
+    def from_spreadsheet(values: Spreadsheet,
                     cell_name_fn: typing.Callable[[Cell], str]) -> "Problem":
         # How many names are there?
         num_names = 0
         for i in range(MAX_NAMES):
-            if values2.get((0, i + 1), "") or values2.get((i + 2, 0), ""):
+            if values[(0, i + 1)] or values[(i + 2, 0)]:
                 num_names = i + 1
 
         # Capture names (and check for consistency)
         row_names = set()
         for i in range(num_names):
-            name = values2.get((0, i + 1), "")
+            name = values[(0, i + 1)]
 
             if name == "":
                 raise CaptureError("Invalid name in cell {}".format(
@@ -142,7 +167,7 @@ class Problem:
                 raise CaptureError("Invalid name in cell {}: duplicate '{}'".format(
                             cell_name_fn((0, i + 1)), name))
 
-            if values2.get((i + 2, 0), "") != name:
+            if values[(i + 2, 0)] != name:
                 raise CaptureError("Invalid name '{}' in cell {} "
                     "- need this name to appear in cell {} too".format(
                             name, cell_name_fn((i + 2, 0)),
@@ -154,14 +179,14 @@ class Problem:
         self = Problem()
         people = self.people
         for y in range(num_names):
-            people.append(Person(name=values2.get((0, y + 1), ""),
-                            is_present=is_truthy(values2.get((1, y + 1), ""))))
+            people.append(Person(name=values[(0, y + 1)],
+                            is_present=is_truthy(values[(1, y + 1)])))
 
         # Find out who already talked to whom
         for y in range(num_names):
             for x in range(num_names):
                 if x != y:
-                    v = values2.get((2 + x, 1 + y), "")
+                    v = values[(2 + x, 1 + y)]
                     if is_truthy(v):
                         people[x].already_met.append(people[y])
                         people[y].already_met.append(people[x])
@@ -190,33 +215,33 @@ class Problem:
         return self
 
     def to_spreadsheet(self) -> Spreadsheet:
-        values2: Spreadsheet = dict()
-        values2[(1, 0)] = "IS PRESENT"
-        values2[(0, 0)] = ""
+        values = Spreadsheet()
+        values[(1, 0)] = "IS PRESENT"
+        values[(0, 0)] = ""
         number: typing.Dict[str, int] = dict()
 
         # Headers, presence
         for (i, p1) in enumerate(self.people):
-            values2[(2 + i, 0)] = p1.name
-            values2[(0, 1 + i)] = p1.name
-            values2[(1, 1 + i)] = str(p1.is_present).upper()
+            values[(2 + i, 0)] = p1.name
+            values[(0, 1 + i)] = p1.name
+            values[(1, 1 + i)] = str(p1.is_present).upper()
             number[p1.name] = i
 
         # Initial state is unmet
         for i in range(len(self.people)):
             for j in range(len(self.people)):
-                values2[(2 + j, 1 + i)] = "unmet"
+                values[(2 + j, 1 + i)] = "unmet"
 
         # ...but nobody has met themselves
         for i in range(len(self.people)):
-            values2[(2 + i, 1 + i)] = "-"
+            values[(2 + i, 1 + i)] = "-"
 
         # Fill in "already met"
         for p1 in self.people:
             a = number[p1.name]
             for p2 in p1.already_met:
                 b = number[p2.name]
-                values2[(2 + a, 1 + b)] = "met"
+                values[(2 + a, 1 + b)] = "met"
 
         # Fill in round numbers if available
         for p1 in self.people:
@@ -225,9 +250,9 @@ class Problem:
                 if p2 is NOBODY:
                     continue
                 b = number[p2.name]
-                values2[(2 + a, 1 + b)] = "round {}".format(i)
+                values[(2 + a, 1 + b)] = "round {}".format(i)
 
-        return values2
+        return values
 
     def to_text(self) -> str:
         out: typing.List[str] = []

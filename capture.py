@@ -43,18 +43,14 @@ def main() -> None:
                 range="Input!{}:{}".format(
                         cell_name_fn((0, 0)),
                         cell_name_fn((MAX_NAMES + 1, MAX_NAMES)))).execute()
-        values = result.get('values', [])
+        values = Spreadsheet(result.get('values', []))
        
-        # Convert to X, Y coordinates
-        values2: Spreadsheet = collections.defaultdict(lambda: "")
-        for (y, row) in enumerate(values):
-            for (x, col) in enumerate(row):
-                values2[(x, y)] = col
-
-        problem = Problem.from_spreadsheet(values2, cell_name_fn)
+        problem = Problem.from_spreadsheet(values, cell_name_fn)
         #print(problem.to_text())
         #print(problem.to_dict())
         solve(problem)
+
+
         print(problem.to_text())
 
 
