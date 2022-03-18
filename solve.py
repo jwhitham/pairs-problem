@@ -76,7 +76,7 @@ class Solver:
                         self.busy[a] = True
                         self.busy[b] = True
                         
-                        score = 0# self.priority[a] + self.priority[b]
+                        score = self.priority[a] + self.priority[b]
                         if ((len(self.pairs) > len(self.best_pairs))
                         or (len(self.pairs) == len(self.best_pairs) and self.best_score < score)):
                             self.best_pairs.clear()
