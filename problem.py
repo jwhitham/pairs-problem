@@ -149,20 +149,11 @@ class Problem:
     @staticmethod
     def from_spreadsheet(values: Spreadsheet,
                     cell_name_fn: typing.Callable[[Cell], str]) -> "Problem":
-        # How many names are there?
-        num_names = 0
-        for i in range(MAX_NAMES):
-            if values[(0, i + 1)] or values[(i + 2, 0)]:
-                num_names = i + 1
-
         # Capture names (and check for consistency)
         row_names = set()
-        for i in range(num_names):
+        for i in range(MAX_NAMES):
             name = values[(0, i + 1)]
 
-            if name == "":
-                raise CaptureError("Invalid name in cell {}".format(
-                            cell_name_fn((0, i + 1))))
             if name.lower() in row_names:
                 raise CaptureError("Invalid name in cell {}: duplicate '{}'".format(
                             cell_name_fn((0, i + 1)), name))
@@ -172,8 +163,11 @@ class Problem:
                     "- need this name to appear in cell {} too".format(
                             name, cell_name_fn((i + 2, 0)),
                             cell_name_fn((0, i + 1))))
+            if name == "":
+                break
 
             row_names.add(name.lower())
+        num_names = len(row_names)
 
         # Read presence values and create records for people
         self = Problem()
@@ -193,14 +187,14 @@ class Problem:
                     elif v.startswith("round "):
                         try:
                             r = int(v.split()[-1])
-                            if (r < 0) or (r > num_names):
+                            if (r < 1) or (r > num_names):
                                 raise ValueError()
                         except ValueError:
                             raise CaptureError(
                                 "Invalid round number '{}' in cell {}".format(
                                         v, cell_name_fn((2 + x, 1 + y)))) from None
-                        people[x].add_to_schedule(r, people[y])
-                        people[y].add_to_schedule(r, people[x])
+                        people[x].add_to_schedule(r - 1, people[y])
+                        people[y].add_to_schedule(r - 1, people[x])
 
         # Normalise schedule length for all people who are present
         size = 0
@@ -250,7 +244,34 @@ class Problem:
                 if p2 is NOBODY:
                     continue
                 b = number[p2.name]
-                values[(2 + a, 1 + b)] = "round {}".format(i)
+                values[(2 + a, 1 + b)] = "round {}".format(i + 1)
+
+        # Create round table too
+        start = len(self.people) + 3
+        size = 0
+        for p1 in self.people:
+            if p1.is_present:
+                size = max(size, len(p1.schedule))
+
+        if size == 0:
+            return values
+
+        for (i, p1) in enumerate(self.people):
+            values[(i + 1, start)] = p1.name
+
+        values[(0, start)] = ""
+        for i in range(size):
+            values[(0, start + i + 1)] = "Round {}".format(i + 1)
+            for (j, p1) in enumerate(self.people):
+                if i < len(p1.schedule):
+                    p2 = p1.schedule[i]
+                else:
+                    p2 = NOBODY
+
+                if p2 is NOBODY:
+                    values[(j + 1, start + i + 1)] = "-"
+                else:
+                    values[(j + 1, start + i + 1)] = p2.name
 
         return values
 
