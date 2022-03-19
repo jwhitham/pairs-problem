@@ -140,56 +140,57 @@ def test_some_already_met() -> None:
             assert len(person.schedule) <= 7
 
 def test_ysj_live() -> None:
-    problem = Problem.from_dict(json.load(open("test_ysj.json", "rt")))
-    assert problem.validate_problem()
-    solve(problem)
-    g_man = "G2"
+    for scenario in ["ysj", "ysj2"]:
+        problem = Problem.from_dict(json.load(open("test_{}.json".format(scenario), "rt")))
+        assert problem.validate_problem()
+        solve(problem)
+        g_man = "G2"
 
-    for p1 in problem.people:
-        nothing_to_do = 0
-        waiting_time = 0
-        final_round = 0
-        for (i, p2) in enumerate(p1.schedule):
-            if p2 is NOBODY:
-                nothing_to_do += 1
-            elif p2.name == g_man:
-                nothing_to_do = 0
-            else:
-                waiting_time = max(waiting_time, nothing_to_do)
-                nothing_to_do = 0
-                final_round = i
+        for p1 in problem.people:
+            nothing_to_do = 0
+            waiting_time = 0
+            final_round = 0
+            for (i, p2) in enumerate(p1.schedule):
+                if p2 is NOBODY:
+                    nothing_to_do += 1
+                elif p2.name == g_man:
+                    nothing_to_do = 0
+                else:
+                    waiting_time = max(waiting_time, nothing_to_do)
+                    nothing_to_do = 0
+                    final_round = i
 
-        # Nobody has to wait for more than two rounds
-        assert waiting_time <= 2, p1.name
+            # Nobody has to wait for more than two rounds
+            assert waiting_time <= 2, p1.name
 
-        # Everyone finished in 10 rounds (except g_man)
-        assert (final_round < 10) or (p1.name == g_man), p1.name
+            # Everyone finished in 10 rounds (except g_man)
+            assert (final_round < 10) or (p1.name == g_man), p1.name
 
-    assert problem.validate_solution()
+        assert problem.validate_solution()
 
-    # Independently check that everybody met
-    for p1 in problem.people:
-        met: typing.Set[Person] = set()
-        for p2 in p1.schedule:
-            if p2 is not NOBODY:
+        # Independently check that everybody met
+        for p1 in problem.people:
+            met: typing.Set[Person] = set()
+            for p2 in p1.schedule:
+                if p2 is not NOBODY:
+                    assert p2 in problem.people
+            for p2 in p1.already_met:
+                assert p2 is not NOBODY
                 assert p2 in problem.people
-        for p2 in p1.already_met:
-            assert p2 is not NOBODY
-            assert p2 in problem.people
-        for p2 in problem.people:
-            assert p2 is not NOBODY
-            assert ((p2 is p1) or
-                (p2 in p1.schedule) or (p2 in p1.already_met)), (p2.name)
-            assert not ((p2 in p1.schedule) and (p2 in p1.already_met))
-            
-        met.update(p1.schedule)
-        met.update(p1.already_met)
-        met.discard(NOBODY)
-        assert not (p1 in met)
-        met.add(p1)
-        assert met == set(problem.people)
+            for p2 in problem.people:
+                assert p2 is not NOBODY
+                assert ((p2 is p1) or
+                    (p2 in p1.schedule) or (p2 in p1.already_met)), (p2.name)
+                assert not ((p2 in p1.schedule) and (p2 in p1.already_met))
+                
+            met.update(p1.schedule)
+            met.update(p1.already_met)
+            met.discard(NOBODY)
+            assert not (p1 in met)
+            met.add(p1)
+            assert met == set(problem.people)
 
-    json.dump(problem.to_dict(), open("solution_ysj.json", "wt"), indent=4)
+        json.dump(problem.to_dict(), open("solution_{}.json".format(scenario), "wt"), indent=4)
 
 def test_ysj() -> None:
     for scenario in range(2):
