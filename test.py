@@ -189,7 +189,7 @@ def test_ysj_live() -> None:
         met.add(p1)
         assert met == set(problem.people)
 
-    json.dump(problem.to_dict(), open("solution_ysj.json", "wt"))
+    json.dump(problem.to_dict(), open("solution_ysj.json", "wt"), indent=4)
 
 def test_ysj() -> None:
     for scenario in range(2):
