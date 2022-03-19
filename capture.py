@@ -2,6 +2,7 @@
 import collections
 import sys
 import json
+import os
 from problem import Problem, MAX_NAMES, Cell, Spreadsheet
 from solve import solve
 
@@ -25,14 +26,22 @@ def cell_name_fn(cell: Cell) -> str:
 
 def main() -> None:
     spreadsheet_id = open("spreadsheet.id", "rt").read().strip()
-    creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    if creds.expired and creds.refresh_token:
-        creds.refresh(Request())
+
+    creds = None
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
-
-    if not creds.valid:
-        raise CredentialsError("Credentials are not valid")
 
     try:
         service = build('sheets', 'v4', credentials=creds)
