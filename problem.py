@@ -195,7 +195,6 @@ class Problem:
             for x in range(y, num_names):
                 v = values[(2 + x, 1 + y)]
                 v2 = values[(2 + y, 1 + x)]
-                assert x >= y
                 if x == y:
                     if is_truthy(v) or v.startswith("round "):
                         raise CaptureError(
@@ -300,6 +299,10 @@ class Problem:
             if p1.is_present:
                 size = max(size, len(p1.schedule))
 
+        # Create alternate view of round table
+        (_, start) = values.get_bottom_right()
+        start += 3
+
         if size != 0:
             for (i, p1) in enumerate(self.people):
                 values[(i + 1, start)] = p1.name
@@ -316,11 +319,7 @@ class Problem:
                 if p2 is NOBODY:
                     values[(j + 1, start + i + 1)] = "-"
                 else:
-                    values[(j + 1, start + i + 1)] = p2.name
-
-        # Create alternate view of round table
-        (_, start) = values.get_bottom_right()
-        start += 3
+                    values[(j + 1, start + i + 1)] = "{} + {}".format(p2.name, p1.name)
 
         # Padding at the bottom and on the right
         (x, y) = values.get_bottom_right()
