@@ -75,13 +75,15 @@ class Solver:
             self.priority[-1] = -self.num_people
 
     def allocate_next(self, a: int, b: int) -> bool:
+        # Find first person a who can be allocated
+        some_b_exists = False
         while a < self.num_people:
             if not self.busy[a]:
                 # a can be allocated
                 while b < self.num_people:
                     if ((not self.busy[b]) and not self.met[a][b]):
                         # b can be allocated
-                        assert a < b
+                        some_b_exists = True
                         self.pairs.append((a, b))
                         self.busy[a] = True
                         self.busy[b] = True
@@ -107,6 +109,12 @@ class Solver:
 
                     # advance to next b
                     b += 1
+
+            if some_b_exists:
+                # No point in searching further values of a, they
+                # will just be equivalent to the one we already found
+                # (symmetry)
+                return False
 
             # advance to next a
             a += 1
