@@ -192,9 +192,10 @@ class Problem:
 
         # Find out who already talked to whom
         for y in range(num_names):
-            for x in range(num_names):
+            for x in range(y, num_names):
                 v = values[(2 + x, 1 + y)]
                 v2 = values[(2 + y, 1 + x)]
+                assert x >= y
                 if x == y:
                     if is_truthy(v) or v.startswith("round "):
                         raise CaptureError(
@@ -207,8 +208,8 @@ class Problem:
                                 cell_name_fn((2 + y, 1 + x)),
                                 cell_name_fn((2 + x, 1 + y))))
                 elif is_truthy(v) or is_truthy(v2):
-                        people[x].already_met.append(people[y])
-                        people[y].already_met.append(people[x])
+                    people[x].already_met.append(people[y])
+                    people[y].already_met.append(people[x])
                 elif v.startswith("round "):
                     try:
                         r = int(v.split()[-1])
@@ -273,7 +274,25 @@ class Problem:
                 if a > b:
                     values[(2 + a, 1 + b)] = "round {}".format(i + 1)
 
-        # Create round table too
+        # Create already met table
+        (_, start) = values.get_bottom_right()
+        start += 3
+        size = 0
+        for p1 in self.people:
+            size = max(size, len(p1.already_met))
+
+        if size != 0:
+            for (i, p1) in enumerate(self.people):
+                values[(i + 1, start)] = p1.name
+            for j in range(size):
+                values[(0, start + j + 1)] = "Already met"
+
+        values[(0, start)] = ""
+        for (i, p1) in enumerate(self.people):
+            for (j, p2) in enumerate(sorted(p1.already_met, key = lambda p2: p2.name)):
+                values[(i + 1, start + j + 1)] = p2.name
+
+        # Create round table
         (_, start) = values.get_bottom_right()
         start += 3
         size = 0
