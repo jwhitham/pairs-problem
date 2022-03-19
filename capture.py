@@ -48,9 +48,11 @@ def main() -> None:
         values = Spreadsheet(result.get('values', []))
        
         problem = Problem.from_spreadsheet(values, cell_name_fn)
+        assert problem.validate_problem()
         json.dump(problem.to_dict(), open("live_input.json", "wt"), indent=4)
         solve(problem)
         values = problem.to_spreadsheet()
+        assert problem.validate_solution()
 
         sheet.values().update(spreadsheetId=spreadsheet_id,
                 range="Output!{}:{}".format(
