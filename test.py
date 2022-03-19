@@ -189,6 +189,8 @@ def test_ysj_live() -> None:
         met.add(p1)
         assert met == set(problem.people)
 
+    json.dump(problem.to_dict(), open("solution_ysj.json", "wt"))
+
 def test_ysj() -> None:
     for scenario in range(2):
         # (a) Some people organised themselves into a horseshoe double ring.
