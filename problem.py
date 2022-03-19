@@ -193,17 +193,16 @@ class Problem:
         # Find out who already talked to whom
         for y in range(num_names):
             for x in range(y, num_names):
-                v = values[(2 + x, 1 + y)]
-                v2 = values[(2 + y, 1 + x)]
+                v = values[(2 + x, 1 + y)]      # upper right triangle
+                v2 = values[(2 + y, 1 + x)]     # lower left triangle
                 if x == y:
                     if is_truthy(v) or v.startswith("round "):
                         raise CaptureError(
                             "Cell {} should be blank".format(
                                     cell_name_fn((2 + x, 1 + y))))
-                elif ((v != v2) and (v != '') and (v2 != '')
-                        and (v != '-') and (v2 != '-')):
+                elif (v != v2) and (v2 != '-'):
                     raise CaptureError(
-                        "Cell {} and {} should be the same,  unless one is blank".format(
+                        "Cell {} and {} should be the same".format(
                                 cell_name_fn((2 + y, 1 + x)),
                                 cell_name_fn((2 + x, 1 + y))))
                 elif is_truthy(v) or is_truthy(v2):

@@ -1,6 +1,7 @@
 
 import collections
 import sys
+import json
 from problem import Problem, MAX_NAMES, Cell, Spreadsheet
 from solve import solve
 
@@ -47,8 +48,7 @@ def main() -> None:
         values = Spreadsheet(result.get('values', []))
        
         problem = Problem.from_spreadsheet(values, cell_name_fn)
-        #print(problem.to_text())
-        #print(problem.to_dict())
+        json.dump(problem.to_dict(), open("live_input.json", "wt"), indent=4)
         solve(problem)
         values = problem.to_spreadsheet()
 
@@ -61,6 +61,7 @@ def main() -> None:
 
 
         print(problem.to_text())
+        json.dump(problem.to_dict(), open("solution.json", "wt"), indent=4)
 
 
     except HttpError as err:
