@@ -282,14 +282,14 @@ class Problem:
 
         if size != 0:
             for (i, p1) in enumerate(self.people):
-                values[(i + 1, start)] = p1.name
+                values[(i + 2, start)] = p1.name
             for j in range(size):
-                values[(0, start + j + 1)] = "Already met"
+                values[(1, start + j + 1)] = "Already met"
 
-        values[(0, start)] = ""
+        values[(1, start)] = ""
         for (i, p1) in enumerate(self.people):
             for (j, p2) in enumerate(sorted(p1.already_met, key = lambda p2: p2.name)):
-                values[(i + 1, start + j + 1)] = p2.name
+                values[(i + 2, start + j + 1)] = p2.name
 
         # Create round table
         (_, start) = values.get_bottom_right()
@@ -305,11 +305,11 @@ class Problem:
 
         if size != 0:
             for (i, p1) in enumerate(self.people):
-                values[(i + 1, start)] = p1.name
+                values[(i + 2, start)] = p1.name
 
-        values[(0, start)] = ""
+        values[(1, start)] = ""
         for i in range(size):
-            values[(0, start + i + 1)] = "Round {}".format(i + 1)
+            values[(1, start + i + 1)] = "Round {}".format(i + 1)
             for (j, p1) in enumerate(self.people):
                 if i < len(p1.schedule):
                     p2 = p1.schedule[i]
@@ -317,9 +317,9 @@ class Problem:
                     p2 = NOBODY
 
                 if p2 is NOBODY:
-                    values[(j + 1, start + i + 1)] = "-"
+                    values[(j + 2, start + i + 1)] = "-"
                 else:
-                    values[(j + 1, start + i + 1)] = "{} + {}".format(p2.name, p1.name)
+                    values[(j + 2, start + i + 1)] = "{} + {}".format(p2.name, p1.name)
 
         # Padding at the bottom and on the right
         (x, y) = values.get_bottom_right()
