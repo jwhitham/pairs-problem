@@ -7,6 +7,7 @@ class Solver:
     def __init__(self, problem: Problem) -> None:
         self.problem = problem
         self.problem.reset()
+        self.nobody_is_present = False
 
         # Filter out people who are not present
         self.my_people: typing.List[Person] = []
@@ -14,11 +15,15 @@ class Solver:
             if p1.is_present:
                 self.my_people.append(p1)
 
+        # Met the fewest people? Then you are assigned first
+        self.my_people.sort(key = lambda p: len(p.already_met))
+
         # Number of people is padded to an even number with NOBODY
         self.num_people = len(self.my_people)
         if (self.num_people % 2) == 1:
             self.num_people += 1
             self.my_people.append(NOBODY)
+            self.nobody_is_present = True
 
         self.num_pairs = self.num_people // 2
 
@@ -57,6 +62,7 @@ class Solver:
         self.busy: typing.List[bool] = [
                 False for i in range(self.num_people)]
         self.best_score = 0
+        self.score = 0
 
         # Priority is given to anyone who hasn't had a meeting recently
         self.priority = [0 for i in range(self.num_people)]
@@ -65,6 +71,8 @@ class Solver:
                 if not self.met[a][b]:
                     self.priority[a] += 1
 
+        if self.nobody_is_present:
+            self.priority[-1] = -self.num_people
 
     def allocate_next(self, a: int, b: int) -> bool:
         while a < self.num_people:
@@ -78,18 +86,21 @@ class Solver:
                         self.busy[a] = True
                         self.busy[b] = True
                         
-                        score = self.priority[a] + self.priority[b]
+                        delta_score = self.priority[a] + self.priority[b]
+                        self.score += delta_score
                         if ((len(self.pairs) > len(self.best_pairs))
-                        or (len(self.pairs) == len(self.best_pairs) and self.best_score < score)):
+                        or (len(self.pairs) == len(self.best_pairs)
+                                    and self.best_score < self.score)):
                             self.best_pairs.clear()
                             self.best_pairs.extend(self.pairs)
-                            self.best_score = score
+                            self.best_score = self.score
                             if len(self.pairs) == self.num_pairs:
                                 return True
 
                         if self.allocate_next(a, b):
                             return True
 
+                        self.score -= delta_score
                         self.pairs.pop()
                         self.busy[a] = False
                         self.busy[b] = False
