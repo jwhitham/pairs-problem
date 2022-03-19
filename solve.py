@@ -3,129 +3,125 @@ import typing
 
 from problem import Problem, Person, NOBODY
 
+class SolverPerson:
+    def __init__(self, person: Person, initial_index: int) -> None:
+        self.person = person
+        self.initial_index = initial_index
+        self.already_met: typing.Set[SolverPerson] = set()
+        self.busy = False
+   
+def social_score(p: SolverPerson) -> typing.Tuple[int, int]:
+    # NOBODY is allocated last
+    if p.person is NOBODY:
+        return (1 << 31, 0)
+
+    # Allocate the person with the fewest meetings first
+    # In case of a tie, allocate the person who has been waiting longest
+    waiting_time = 0
+    for other in reversed(p.person.schedule):
+        if other is NOBODY:
+            waiting_time += 1
+        else:
+            break
+
+    return (len(p.already_met), -waiting_time)
+
 class Solver:
     def __init__(self, problem: Problem) -> None:
         self.problem = problem
         self.problem.reset()
-        self.nobody_is_present = False
 
         # Filter out people who are not present
-        self.my_people: typing.List[Person] = []
-        for p1 in self.problem.people:
-            if p1.is_present:
-                self.my_people.append(p1)
-
-        # Met the fewest people? Then you are assigned first
-        self.my_people.sort(key = lambda p: len(p.already_met))
+        self.my_people: typing.List[SolverPerson] = []
+        for person in self.problem.people:
+            assert len(person.schedule) == 0
+            if person.is_present:
+                self.my_people.append(SolverPerson(person, len(self.my_people)))
 
         # Number of people is padded to an even number with NOBODY
         self.num_people = len(self.my_people)
         if (self.num_people % 2) == 1:
             self.num_people += 1
-            self.my_people.append(NOBODY)
-            self.nobody_is_present = True
+            self.my_people.append(SolverPerson(NOBODY, len(self.my_people)))
 
         self.num_pairs = self.num_people // 2
 
         # Met matrix - true if people have met
-        self.met: typing.List[typing.List[bool]] = []
-        for a in range(self.num_people):
-            self.met.append([False for b in range(self.num_people)])
-
-        # Merge already_met into matrix
-        self.already_met: typing.Set[typing.Tuple[int, int]] = set()
-        for a in range(self.num_people):
-            p1 = self.my_people[a]
-            for p2 in p1.already_met:
-                try:
-                    b = self.my_people.index(p2)
-                except ValueError:
-                    b = -1
-                if (b >= 0) and (p1 is not NOBODY) and (p2 is not NOBODY):
-                    self.met[a][b] = True
-                    self.met[b][a] = True
+        for p1 in self.my_people:
+            for person in p1.person.already_met:
+                for p2 in self.my_people:
+                    if p2.person is person:
+                        # p1 has met p2
+                        p1.already_met.add(p2)
+                        p2.already_met.add(p1)
 
         # How many meetings haven't happened yet?
         self.num_meetings_todo = 0
-        for a in range(self.num_people):
-            for b in range(a + 1, self.num_people):
-                if not self.met[a][b]:
+        for p1 in self.my_people:
+            for p2 in self.my_people:
+                if ((p2 not in p1.already_met)
+                and (p1.initial_index < p2.initial_index)):
                     self.num_meetings_todo += 1
 
-
-        self.reset()
-
     def reset(self) -> None:
-        # Prepare to solve
-        self.pairs: typing.List[typing.Tuple[int, int]] = []
-        self.best_pairs: typing.List[typing.Tuple[int, int]] = []
-        self.busy: typing.List[bool] = [
-                False for i in range(self.num_people)]
-        self.best_score = 0
-        self.score = 0
+        # Prepare to solve - order the people so that
+        # the people with the fewest meetings are allocated first
+        self.my_people.sort(key = social_score)
 
-        # Priority is given to anyone who hasn't had a meeting recently
-        self.priority = [0 for i in range(self.num_people)]
-        for a in range(self.num_people):
-            for b in range(self.num_people):
-                if not self.met[a][b]:
-                    self.priority[a] += 1
+        self.pairs: typing.List[typing.Tuple[SolverPerson, SolverPerson]] = []
+        self.best_pairs: typing.List[typing.Tuple[SolverPerson, SolverPerson]] = []
+        for p1 in self.my_people:
+            p1.busy = False
 
-        if self.nobody_is_present:
-            self.priority[-1] = -self.num_people
-
-    def allocate_next(self, a: int, b: int) -> bool:
-        # Find first person a who can be allocated
-        some_b_exists = False
-        while a < self.num_people:
-            if not self.busy[a]:
-                # a can be allocated
-                while b < self.num_people:
-                    if ((not self.busy[b]) and not self.met[a][b]):
-                        # b can be allocated
-                        some_b_exists = True
-                        self.pairs.append((a, b))
-                        self.busy[a] = True
-                        self.busy[b] = True
+    def allocate_next(self, i1: int, i2: int) -> bool:
+        # Find first person who can be allocated
+        some_p2_exists = False
+        while i1 < self.num_people:
+            p1 = self.my_people[i1]
+            if not p1.busy:
+                # p1 can be allocated
+                while i2 < self.num_people:
+                    p2 = self.my_people[i2]
+                    if (not p2.busy) and (p2 not in p1.already_met):
+                        # p2 can be allocated
+                        some_p2_exists = True
+                        self.pairs.append((p1, p2))
+                        p1.busy = True
+                        p2.busy = True
                         
-                        delta_score = self.priority[a] + self.priority[b]
-                        self.score += delta_score
-                        if ((len(self.pairs) > len(self.best_pairs))
-                        or (len(self.pairs) == len(self.best_pairs)
-                                    and self.best_score < self.score)):
+                        if len(self.pairs) > len(self.best_pairs):
                             self.best_pairs.clear()
                             self.best_pairs.extend(self.pairs)
-                            self.best_score = self.score
                             if len(self.pairs) == self.num_pairs:
                                 return True
 
-                        if self.allocate_next(a, b):
+                        if self.allocate_next(i1, i2):
                             return True
 
-                        self.score -= delta_score
                         self.pairs.pop()
-                        self.busy[a] = False
-                        self.busy[b] = False
+                        p1.busy = False
+                        p2.busy = False
 
-                    # advance to next b
-                    b += 1
+                    # advance to next p2
+                    i2 += 1
 
-            if some_b_exists:
-                # No point in searching further values of a, they
+            if some_p2_exists:
+                # No point in searching further values of p1, they
                 # will just be equivalent to the one we already found
                 # (symmetry)
                 return False
 
-            # advance to next a
-            a += 1
-            b = a + 1
+            # advance to next p1
+            i1 += 1
+            i2 = i1 + 1
 
         # No complete solution was found
         return False
 
     def solve(self) -> None:
         for p1 in self.my_people:
-            assert len(p1.schedule) == 0
+            assert len(p1.person.schedule) == 0
+
         num_rounds = 0
         while self.num_meetings_todo > 0:
             self.reset()
@@ -134,28 +130,23 @@ class Solver:
 
             assert len(self.best_pairs) != 0
 
-            for (a, b) in self.best_pairs:
-                assert a < b
-                assert not self.met[a][b]
-                assert not self.met[b][a]
-                self.met[a][b] = True
-                self.met[b][a] = True
+            for (p1, p2) in self.best_pairs:
+                p1.already_met.add(p2)
+                p2.already_met.add(p1)
                 self.num_meetings_todo -= 1
                 assert self.num_meetings_todo >= 0
-                p1 = self.my_people[a]
-                p2 = self.my_people[b]
-                if p1 is not NOBODY:
-                    p1.schedule.append(p2)
-                if p2 is not NOBODY:
-                    p2.schedule.append(p1)
+                if p1.person is not NOBODY:
+                    p1.person.schedule.append(p2.person)
+                if p2.person is not NOBODY:
+                    p2.person.schedule.append(p1.person)
 
             for p1 in self.my_people:
-                if p1 is NOBODY:
+                if p1.person is NOBODY:
                     continue
-                assert len(p1.schedule) <= num_rounds
-                assert (num_rounds - 1) <= len(p1.schedule)
-                if len(p1.schedule) == (num_rounds - 1):
-                    p1.schedule.append(NOBODY)
+                assert len(p1.person.schedule) <= num_rounds
+                assert (num_rounds - 1) <= len(p1.person.schedule)
+                if len(p1.person.schedule) == (num_rounds - 1):
+                    p1.person.schedule.append(NOBODY)
 
 
 def solve(problem: Problem) -> None:
