@@ -4,32 +4,29 @@ Pairs problem
 
 _Scenario_: A group of students are taking a class at a university,
 and the class includes some groupwork exercises.
-
 One of these exercises involves one-to-one meetings in which the
 students carry out some task together.
 
 In order to pass the course, each student must meet each other
-student _exactly once_.
-
-To maximize efficiency, an organizer wishes to
+student _exactly once_. An organizer wishes to
 create a _schedule_ which lists the student meetings.
+To maximize efficiency, this schedule should be as short as possible.
 
 Each meeting takes ten minutes, so the meeting schedule is divided
 into ten minute _rounds_. During each round, meetings
 take place simultaneously. Each student can only be in one
 meeting, and each meeting consists of only two students.
 
+Problem
+-------
+
 _Problem 1_: Generate a schedule consisting of a minimum number
 of rounds, in which every student meets every other student
-exactly once.
-
-For problem 1, the input is a list of students.
+exactly once. For problem 1, the input is a list of students.
 
 _Problem 2_: Solve Problem 1 but with the additional constraint
-that some students have already met.
-
-For problem 2, the input is a list of students,
-plus a list of pairs that have already met.
+that some students have already met. For problem 2, the input
+is a list of students, plus a list of pairs that have already met.
 
 Examples
 --------
@@ -110,5 +107,22 @@ client library to be installed. I based my work on the
 [Python quickstart guide](https://developers.google.com/sheets/api/quickstart/python)
 using authorization credentials for a desktop application.
 
+Sample data set
+---------------
 
+test\_ysj2.json is a sample real-world data set for a class of
+19 students after one session already took place. In this first
+session, one student ("G2") was absent due to illness. The other
+18 formed a horseshoe double ring in which 9 were on the inside
+and 9 were on the outside. The students rotated after each round,
+but after 9 rounds, discovered that they had returned to their
+original pairings. They attempted to pair up by hand, but this
+left some students with nothing to do, because pairing is
+not a trivial problem. The data set represents the state of 
+the problem at the beginning of the second session,
+where most students still need to meet 8 or 9 others,
+and G2 must meet 18 others.
+
+test.py has code to generate arbitrary-sized variants of this
+problem from pseudorandom data.
 

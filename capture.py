@@ -17,9 +17,6 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 
 
-class CredentialsError(Exception):
-    pass
-
 def cell_name_fn(cell: Cell) -> str:
     (column, row) = cell
     return "R{}C{}".format(row + 1, column + 1)
