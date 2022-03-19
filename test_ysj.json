@@ -1,0 +1,310 @@
+{
+    "people": [
+        {
+            "name": "B1",
+            "is_present": true,
+            "already_met": [
+                "G1",
+                "J1",
+                "J2",
+                "K2",
+                "L1",
+                "M1",
+                "N1",
+                "P1",
+                "S3",
+                "Y1"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "D1",
+            "is_present": true,
+            "already_met": [
+                "G1",
+                "J1",
+                "J2",
+                "K2",
+                "K3",
+                "L1",
+                "M1",
+                "N1",
+                "P1",
+                "S3"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "E1",
+            "is_present": true,
+            "already_met": [
+                "G1",
+                "J1",
+                "K2",
+                "L1",
+                "M1",
+                "N1",
+                "N2",
+                "P1",
+                "S3"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "G1",
+            "is_present": true,
+            "already_met": [
+                "B1",
+                "D1",
+                "E1",
+                "K1",
+                "K3",
+                "M1",
+                "N2",
+                "S1",
+                "S2",
+                "Y1"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "J1",
+            "is_present": true,
+            "already_met": [
+                "B1",
+                "D1",
+                "E1",
+                "K1",
+                "K3",
+                "L1",
+                "N2",
+                "S1",
+                "S2",
+                "Y1"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "J2",
+            "is_present": true,
+            "already_met": [
+                "B1",
+                "D1",
+                "K1",
+                "N2",
+                "P1",
+                "S1",
+                "S2",
+                "Y1"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "K1",
+            "is_present": true,
+            "already_met": [
+                "G1",
+                "J1",
+                "J2",
+                "K2",
+                "L1",
+                "M1",
+                "N1",
+                "P1",
+                "S3"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "K2",
+            "is_present": true,
+            "already_met": [
+                "B1",
+                "D1",
+                "E1",
+                "K1",
+                "K3",
+                "N1",
+                "N2",
+                "S1",
+                "S2",
+                "Y1"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "K3",
+            "is_present": true,
+            "already_met": [
+                "D1",
+                "G1",
+                "J1",
+                "K2",
+                "L1",
+                "M1",
+                "N1",
+                "P1",
+                "S3"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "L1",
+            "is_present": true,
+            "already_met": [
+                "B1",
+                "D1",
+                "E1",
+                "J1",
+                "K1",
+                "K3",
+                "N2",
+                "S1",
+                "S2",
+                "Y1"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "M1",
+            "is_present": true,
+            "already_met": [
+                "B1",
+                "D1",
+                "E1",
+                "G1",
+                "K1",
+                "K3",
+                "N2",
+                "S1",
+                "S2",
+                "Y1"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "N1",
+            "is_present": true,
+            "already_met": [
+                "B1",
+                "D1",
+                "E1",
+                "K1",
+                "K2",
+                "K3",
+                "N2",
+                "S1",
+                "S2",
+                "Y1"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "N2",
+            "is_present": true,
+            "already_met": [
+                "E1",
+                "G1",
+                "J1",
+                "J2",
+                "K2",
+                "L1",
+                "M1",
+                "N1",
+                "P1",
+                "S3"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "P1",
+            "is_present": true,
+            "already_met": [
+                "B1",
+                "D1",
+                "E1",
+                "J2",
+                "K1",
+                "K3",
+                "N2",
+                "S1",
+                "S2",
+                "Y1"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "S1",
+            "is_present": true,
+            "already_met": [
+                "G1",
+                "J1",
+                "J2",
+                "K2",
+                "L1",
+                "M1",
+                "N1",
+                "P1",
+                "S2",
+                "S3"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "S2",
+            "is_present": true,
+            "already_met": [
+                "G1",
+                "J1",
+                "J2",
+                "K2",
+                "L1",
+                "M1",
+                "N1",
+                "P1",
+                "S1",
+                "S3"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "S3",
+            "is_present": true,
+            "already_met": [
+                "B1",
+                "D1",
+                "E1",
+                "K1",
+                "K3",
+                "N2",
+                "S1",
+                "S2",
+                "Y1"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "Y1",
+            "is_present": true,
+            "already_met": [
+                "B1",
+                "G1",
+                "J1",
+                "J2",
+                "K2",
+                "L1",
+                "M1",
+                "N1",
+                "P1",
+                "S3"
+            ],
+            "schedule": []
+        },
+        {
+            "name": "G2",
+            "is_present": true,
+            "already_met": [],
+            "schedule": []
+        }
+    ]
+}
