@@ -139,7 +139,7 @@ def test_some_already_met() -> None:
         for person in problem.people:
             assert len(person.schedule) <= 7
 
-def Xtest_ysj() -> None:
+def test_ysj() -> None:
     for scenario in range(2):
         # (a) Some people organised themselves into a horseshoe double ring.
         # They rotated - inner ring clockwise, outer ring anti-clockwise.

@@ -22,9 +22,6 @@ class Solver:
 
         self.num_pairs = self.num_people // 2
 
-        # Priority is given to anyone who hasn't had a meeting recently
-        self.priority = [self.num_people for i in range(self.num_people)]
-
         # Met matrix - true if people have met
         self.met: typing.List[typing.List[bool]] = []
         for a in range(self.num_people):
@@ -42,8 +39,6 @@ class Solver:
                 if (b >= 0) and (p1 is not NOBODY) and (p2 is not NOBODY):
                     self.met[a][b] = True
                     self.met[b][a] = True
-                    self.priority[a] -= 1
-                    self.priority[b] -= 1
 
         # How many meetings haven't happened yet?
         self.num_meetings_todo = 0
@@ -62,6 +57,13 @@ class Solver:
         self.busy: typing.List[bool] = [
                 False for i in range(self.num_people)]
         self.best_score = 0
+
+        # Priority is given to anyone who hasn't had a meeting recently
+        self.priority = [0 for i in range(self.num_people)]
+        for a in range(self.num_people):
+            for b in range(self.num_people):
+                if not self.met[a][b]:
+                    self.priority[a] += 1
 
 
     def allocate_next(self, a: int, b: int) -> bool:
@@ -113,17 +115,12 @@ class Solver:
 
             assert len(self.best_pairs) != 0
 
-            for a in range(len(self.my_people)):
-                self.priority[a] += 1
-
             for (a, b) in self.best_pairs:
                 assert a < b
                 assert not self.met[a][b]
                 assert not self.met[b][a]
                 self.met[a][b] = True
                 self.met[b][a] = True
-                self.priority[a] = 0
-                self.priority[b] = 0
                 self.num_meetings_todo -= 1
                 assert self.num_meetings_todo >= 0
                 p1 = self.my_people[a]

@@ -194,26 +194,32 @@ class Problem:
         for y in range(num_names):
             for x in range(num_names):
                 v = values[(2 + x, 1 + y)]
-                if x != y:
-                    if is_truthy(v):
-                        people[x].already_met.append(people[y])
-                        people[y].already_met.append(people[x])
-                    elif v.startswith("round "):
-                        try:
-                            r = int(v.split()[-1])
-                            if (r < 1) or (r > num_names):
-                                raise ValueError()
-                        except ValueError:
-                            raise CaptureError(
-                                "Invalid round number '{}' in cell {}".format(
-                                        v, cell_name_fn((2 + x, 1 + y)))) from None
-                        people[x].add_to_schedule(r - 1, people[y])
-                        people[y].add_to_schedule(r - 1, people[x])
-                else:
+                v2 = values[(2 + y, 1 + x)]
+                if x == y:
                     if is_truthy(v) or v.startswith("round "):
                         raise CaptureError(
                             "Cell {} should be blank".format(
                                     cell_name_fn((2 + x, 1 + y))))
+                elif ((v != v2) and (v != '') and (v2 != '')
+                        and (v != '-') and (v2 != '-')):
+                    raise CaptureError(
+                        "Cell {} and {} should be the same,  unless one is blank".format(
+                                cell_name_fn((2 + y, 1 + x)),
+                                cell_name_fn((2 + x, 1 + y))))
+                elif is_truthy(v) or is_truthy(v2):
+                        people[x].already_met.append(people[y])
+                        people[y].already_met.append(people[x])
+                elif v.startswith("round "):
+                    try:
+                        r = int(v.split()[-1])
+                        if (r < 1) or (r > num_names):
+                            raise ValueError()
+                    except ValueError:
+                        raise CaptureError(
+                            "Invalid round number '{}' in cell {}".format(
+                                    v, cell_name_fn((2 + x, 1 + y)))) from None
+                    people[x].add_to_schedule(r - 1, people[y])
+                    people[y].add_to_schedule(r - 1, people[x])
 
 
         # Normalise schedule length for all people who are present
