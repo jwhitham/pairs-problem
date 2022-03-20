@@ -112,7 +112,11 @@ exclude that person.
 
 [Here is an example](https://docs.google.com/spreadsheets/d/1RUksPozO0sZPyPnlRhDgmgyIMZz3gNYWlNSmTYpr2mo/edit?usp=sharing).
 
+Input:
+
 ![input](/sample-input.png)
+
+Output:
 
 ![output](/sample-output.png)
 
