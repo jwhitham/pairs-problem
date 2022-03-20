@@ -50,17 +50,6 @@ Frank and George already met.
 
 At the end of round 5, all the students have met each other exactly once.
 
-Notes
------
-
-For problem 1, if there are N students, and N is an even number, then the
-optimal number of rounds is N - 1.
-
-If N is an odd number, then the optimal number of rounds is N. In
-this case, one student will have to take a break during each round
-(meeting nobody).
-
-
 Background
 ----------
 
@@ -69,21 +58,27 @@ seems quite trivial, but actually it is not easy for a large class
 to organize itself optimally, and after some rounds there will
 probably be some students sitting out.
 
-Even for the simpler Problem 1, I could not think of any simple rule
-which could be followed by the students in order to organize themselves
-optimally.
+I thought this could be a well-known CS problem, but I didn't know what
+to search for, having no name for it. However, you can also search
+for numbers. When I worked out the number of possible pairings for the first round
+for 2, 4, 6, 8 students and so on, I found the sequence 1, 3, 15,
+105, 945, 10395, 135135... Searching for this sequence reveals it is
+the [double factorial](https://en.wikipedia.org/wiki/Double_factorial)
+sequence and the
+[chord diagram](https://commons.wikimedia.org/wiki/File:Chord_diagrams_K6_matchings.svg)
+at the top of the Wikipedia page immediately
+stands out as a representation of what I had called the "pairs problem".
 
-I also could not relate this problem to any of the CS problems
-that I knew of. It's reminiscent of some well-known problems, but
-it involves a set of people and graph-like relationships between them,
-and many CS problems are like that. Perhaps you recognize it? Perhaps
-there is already a well-known textbook solution?
-
-In its current form the program can easily support classes of around
-20 students but does not scale to support many more. I am interested
-in better algorithms which can solve it more quickly. Please send me an
-email if you recognize the problem and know what it is called.
-
+The goal within each round is to find a
+[maximum cardinality matching](https://en.wikipedia.org/wiki/Maximum_cardinality_matching)
+on an arbitrary graph. In the first round of Problem 1, anyone can meet anyone, so the
+graph consists of N vertices (representing N students) and N(N-1) edges linking
+every vertex to every other vertex. In Problem 2, and in subsequent rounds of
+Problem 1, some edges are removed, since some students already met.
+The [blossom algorithm](https://en.wikipedia.org/wiki/Blossom_algorithm) provides a
+solution; more efficient but more complex algorithms have since been discovered
+by researchers. My own algorithm is much less efficient than any of these, becoming
+completely ineffective for large numbers of students due to high time complexity.
 
 Solver
 ------
@@ -125,24 +120,4 @@ client library to be installed. I based capture.py on Google's
 [Python quickstart guide](https://developers.google.com/sheets/api/quickstart/python)
 using authorization credentials for a desktop application.
 
-Sample data set
----------------
-
-test\_ysj2.json is a sample real-world data set for a class of
-19 students after one session already took place. In the first
-session, one student ("G2") was absent due to illness. The other
-18 formed a horseshoe double ring in which 9 were on the inside
-and 9 were on the outside. The students rotated after each round,
-but after 9 rounds, discovered that they had returned to their
-original pairings. They attempted to pair up by hand, but this
-left some students with nothing to do, because pairing is
-not a trivial problem.
-
-The data set represents the state of 
-the problem at the beginning of the second session,
-where most students still need to meet 8 or 9 others,
-and G2 must meet 18 others.
-
-test.py has code to generate arbitrary-sized variants of this
-problem from pseudorandom data.
 
