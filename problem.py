@@ -1,6 +1,8 @@
 
 import typing
 
+IS_PRESENT = "IS PRESENT"
+ROUND = "round "
 MAX_NAMES = 24
 
 Cell = typing.Tuple[int, int]
@@ -23,7 +25,7 @@ class Person:
 NOBODY = Person("*nobody*", False)
 
 class Spreadsheet:
-    def __init__(self, values: typing.List[typing.List[str]] = []) -> None:
+    def __init__(self, values: typing.List[typing.List[str]]) -> None:
         self.values: typing.List[typing.List[str]] = values
 
     def __getitem__(self, cell: Cell) -> str:
@@ -163,20 +165,30 @@ class Problem:
     @staticmethod
     def from_spreadsheet(values: Spreadsheet,
                     cell_name_fn: typing.Callable[[Cell], str]) -> "Problem":
+        # Find start of table
+        (x, y) = values.get_bottom_right()
+        for start in range(y):
+            if values[(1, start)] == IS_PRESENT:
+                break
+
+        if values[(1, start)] != IS_PRESENT:
+            raise CaptureError("Unable to find '{}' marker - "
+                        "input is not valid".format(IS_PRESENT))
+
         # Capture names (and check for consistency)
         row_names = set()
         for i in range(MAX_NAMES):
-            name = values[(0, i + 1)]
+            name = values[(0, i + 1 + start)]
 
             if name.lower() in row_names:
                 raise CaptureError("Invalid name in cell {}: duplicate '{}'".format(
-                            cell_name_fn((0, i + 1)), name))
+                            cell_name_fn((0, i + 1 + start)), name))
 
-            if values[(i + 2, 0)] != name:
+            if values[(i + 2, start)] != name:
                 raise CaptureError("Invalid name '{}' in cell {} "
                     "- need this name to appear in cell {} too".format(
-                            name, cell_name_fn((i + 2, 0)),
-                            cell_name_fn((0, i + 1))))
+                            name, cell_name_fn((i + 2, start)),
+                            cell_name_fn((0, i + 1 + start))))
             if name == "":
                 break
 
@@ -187,28 +199,28 @@ class Problem:
         self = Problem()
         people = self.people
         for y in range(num_names):
-            people.append(Person(name=values[(0, y + 1)],
-                            is_present=is_truthy(values[(1, y + 1)])))
+            people.append(Person(name=values[(0, y + 1 + start)],
+                            is_present=is_truthy(values[(1, y + 1 + start)])))
 
         # Find out who already talked to whom
         for y in range(num_names):
             for x in range(y, num_names):
-                v = values[(2 + x, 1 + y)]      # upper right triangle
-                v2 = values[(2 + y, 1 + x)]     # lower left triangle
+                v = values[(2 + x, 1 + y + start)]  # upper right triangle
+                v2 = values[(2 + y, 1 + x + start)] # lower left triangle
                 if x == y:
-                    if is_truthy(v) or v.startswith("round "):
+                    if is_truthy(v) or v.startswith(ROUND):
                         raise CaptureError(
                             "Cell {} should be blank".format(
-                                    cell_name_fn((2 + x, 1 + y))))
+                                    cell_name_fn((2 + x, 1 + y + start))))
                 elif (v != v2) and (v2 != '-'):
                     raise CaptureError(
                         "Cell {} and {} should be the same".format(
-                                cell_name_fn((2 + y, 1 + x)),
-                                cell_name_fn((2 + x, 1 + y))))
+                                cell_name_fn((2 + y, 1 + x + start)),
+                                cell_name_fn((2 + x, 1 + y + start))))
                 elif is_truthy(v) or is_truthy(v2):
                     people[x].already_met.append(people[y])
                     people[y].already_met.append(people[x])
-                elif v.startswith("round "):
+                elif v.startswith(ROUND):
                     try:
                         r = int(v.split()[-1])
                         if (r < 1) or (r > num_names):
@@ -216,7 +228,7 @@ class Problem:
                     except ValueError:
                         raise CaptureError(
                             "Invalid round number '{}' in cell {}".format(
-                                    v, cell_name_fn((2 + x, 1 + y)))) from None
+                                    v, cell_name_fn((2 + x, 1 + y + start)))) from None
                     people[x].add_to_schedule(r - 1, people[y])
                     people[y].add_to_schedule(r - 1, people[x])
 
@@ -234,43 +246,34 @@ class Problem:
         return self
 
     def to_spreadsheet(self) -> Spreadsheet:
-        values = Spreadsheet()
-        values[(1, 0)] = "IS PRESENT"
-        values[(0, 0)] = ""
-        number: typing.Dict[str, int] = dict()
+        values = Spreadsheet([])
 
-        # Headers, presence
-        for (i, p1) in enumerate(self.people):
-            values[(2 + i, 0)] = p1.name
-            values[(0, 1 + i)] = p1.name
-            values[(1, 1 + i)] = str(p1.is_present).upper()
-            number[p1.name] = i
+        # Create round table
+        start = 0
+        size = 0
+        for p1 in self.people:
+            if p1.is_present:
+                size = max(size, len(p1.schedule))
 
-        # Initial state is unmet
-        for x in range(len(self.people)):
-            for y in range(len(self.people)):
-                if x > y:
-                    values[(2 + x, 1 + y)] = "unmet"
+        values[(0, start)] = ""
+        values[(1, start)] = ""
+        if size != 0:
+            values[(1, start)] = "SOLUTION"
+            for (i, p1) in enumerate(self.people):
+                values[(i + 2, start)] = p1.name
+
+        for i in range(size):
+            values[(1, start + i + 1)] = "{}{}".format(ROUND.title(), i + 1)
+            for (j, p1) in enumerate(self.people):
+                if i < len(p1.schedule):
+                    p2 = p1.schedule[i]
                 else:
-                    values[(2 + x, 1 + y)] = "-"
+                    p2 = NOBODY
 
-        # Fill in "already met"
-        for p1 in self.people:
-            a = number[p1.name]
-            for p2 in p1.already_met:
-                b = number[p2.name]
-                if a > b:
-                    values[(2 + a, 1 + b)] = "met"
-
-        # Fill in round numbers if available
-        for p1 in self.people:
-            a = number[p1.name]
-            for (i, p2) in enumerate(p1.schedule):
                 if p2 is NOBODY:
-                    continue
-                b = number[p2.name]
-                if a > b:
-                    values[(2 + a, 1 + b)] = "round {}".format(i + 1)
+                    values[(j + 2, start + i + 1)] = "-"
+                else:
+                    values[(j + 2, start + i + 1)] = "{} + {}".format(p2.name, p1.name)
 
         # Create already met table
         (_, start) = values.get_bottom_right()
@@ -289,36 +292,47 @@ class Problem:
         for (i, p1) in enumerate(self.people):
             for (j, p2) in enumerate(sorted(p1.already_met, key = lambda p2: p2.name)):
                 values[(i + 2, start + j + 1)] = p2.name
-
-        # Create round table
+        
+        # Create normalised copy of input table
         (_, start) = values.get_bottom_right()
         start += 3
-        size = 0
+        values[(1, start)] = IS_PRESENT
+        values[(0, start)] = ""
+        number: typing.Dict[str, int] = dict()
+
+        # Headers, presence
+        for (i, p1) in enumerate(self.people):
+            values[(2 + i, start)] = p1.name
+            values[(0, 1 + i + start)] = p1.name
+            values[(1, 1 + i + start)] = str(p1.is_present).upper()
+            number[p1.name] = i
+
+        # Initial state is unmet
+        for x in range(len(self.people)):
+            for y in range(len(self.people)):
+                if x > y:
+                    values[(2 + x, 1 + y + start)] = "unmet"
+                else:
+                    values[(2 + x, 1 + y + start)] = "-"
+
+        # Fill in "already met"
         for p1 in self.people:
-            if p1.is_present:
-                size = max(size, len(p1.schedule))
+            a = number[p1.name]
+            for p2 in p1.already_met:
+                b = number[p2.name]
+                if a > b:
+                    values[(2 + a, 1 + b + start)] = "met"
 
-        # Create alternate view of round table
-        (_, start) = values.get_bottom_right()
-        start += 3
-
-        if size != 0:
-            for (i, p1) in enumerate(self.people):
-                values[(i + 2, start)] = p1.name
-
-        values[(1, start)] = ""
-        for i in range(size):
-            values[(1, start + i + 1)] = "Round {}".format(i + 1)
-            for (j, p1) in enumerate(self.people):
-                if i < len(p1.schedule):
-                    p2 = p1.schedule[i]
-                else:
-                    p2 = NOBODY
-
+        # Fill in round numbers if available
+        for p1 in self.people:
+            a = number[p1.name]
+            for (i, p2) in enumerate(p1.schedule):
                 if p2 is NOBODY:
-                    values[(j + 2, start + i + 1)] = "-"
-                else:
-                    values[(j + 2, start + i + 1)] = "{} + {}".format(p2.name, p1.name)
+                    continue
+                b = number[p2.name]
+                if a > b:
+                    values[(2 + a, 1 + b + start)] = "{}{}".format(ROUND, i + 1)
+
 
         # Padding at the bottom and on the right
         (x, y) = values.get_bottom_right()
@@ -364,7 +378,7 @@ class Problem:
             out.append("\n")
 
         for r in range(num_rounds):
-            rname = "Round {}".format(r + 1)
+            rname = "{}{}".format(ROUND.title(), r + 1)
             out.append(rname)
             out.append("\n")
             out.append("-" * len(rname))

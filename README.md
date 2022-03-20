@@ -94,16 +94,30 @@ tests in test.py. The problem can be represented in JSON form
 or as a spreadsheet. The spreadsheet form is intended to be
 directly viewed and edited by users.
 
-capture.py uses the Google Docs API to access the spreadsheet,
-which should have two pages: Input and Output. Input contains
-a table of people marked up with "MET", while Output is updated
-by the program to contain the finished schedule. Here is a partial
-example:
+Spreadsheet
+-----------
 
-![screenshot](/sample.png)
+The spreadsheet is stored in Google Docs. There are two pages,
+Input and Output. Input contains a table of people, listed both
+across (cells C1, D1, E1..) and down (cells A2, A3, A4...). These
+two lists must match, i.e. A2 = C1, A3 = D1, etc.
+
+If a cell corresponding to two names contains a "truthy" value
+such as "MET", "TRUE", or "1", then the algorithm considers those
+people to have already met.
+
+Column B allows each person to be easily removed from the problem,
+e.g. if they are absent. A "falsey" value in this column will
+exclude that person.
+
+[Here is an example](https://docs.google.com/spreadsheets/d/1RUksPozO0sZPyPnlRhDgmgyIMZz3gNYWlNSmTYpr2mo/edit?usp=sharing).
+
+![input](/sample-input.png)
+
+![output](/sample-output.png)
 
 The Google spreadsheet requires the Google
-client library to be installed. I based my work on the
+client library to be installed. I based capture.py on Google's
 [Python quickstart guide](https://developers.google.com/sheets/api/quickstart/python)
 using authorization credentials for a desktop application.
 
@@ -111,14 +125,16 @@ Sample data set
 ---------------
 
 test\_ysj2.json is a sample real-world data set for a class of
-19 students after one session already took place. In this first
+19 students after one session already took place. In the first
 session, one student ("G2") was absent due to illness. The other
 18 formed a horseshoe double ring in which 9 were on the inside
 and 9 were on the outside. The students rotated after each round,
 but after 9 rounds, discovered that they had returned to their
 original pairings. They attempted to pair up by hand, but this
 left some students with nothing to do, because pairing is
-not a trivial problem. The data set represents the state of 
+not a trivial problem.
+
+The data set represents the state of 
 the problem at the beginning of the second session,
 where most students still need to meet 8 or 9 others,
 and G2 must meet 18 others.
