@@ -67,21 +67,74 @@ the [double factorial](https://en.wikipedia.org/wiki/Double_factorial)
 sequence and the
 [chord diagram](https://commons.wikimedia.org/wiki/File:Chord_diagrams_K6_matchings.svg)
 at the top of the Wikipedia page immediately
-stands out as a representation of what I had called the "pairs problem".
+stands out as a representation of possible pairings for each round.
 
-The goal within each round is to find a
-[maximum cardinality matching](https://en.wikipedia.org/wiki/Maximum_cardinality_matching)
-on an arbitrary graph. In the first round of Problem 1, anyone can meet anyone, so the
-graph consists of N vertices (representing N students) and N(N-1) edges linking
-every vertex to every other vertex. In Problem 2, and in subsequent rounds of
-Problem 1, some edges are removed, since some students already met.
-The [blossom algorithm](https://en.wikipedia.org/wiki/Blossom_algorithm) provides a
-solution; more efficient but more complex algorithms have since been discovered
-by researchers. My own algorithm is much less efficient than any of these, becoming
-completely ineffective for large numbers of students due to high time complexity.
+Within each round, the first goal is to find pairings between students who
+have not already met. This is "[maximum cardinality
+matching](https://en.wikipedia.org/wiki/Maximum_cardinality_matching)"
+on an _arbitrary_ graph: arbitrary as opposed to special cases such as a
+_bipartite_ graph where the students have been divided into two groups.
+This problem can be solved efficiently by
+the [blossom algorithm](https://en.wikipedia.org/wiki/Blossom_algorithm) and
+various others.
 
-Solver
-------
+However, there is a second and equally important goal, which is to find
+pairings so that the remaining number of rounds is minimised. Not all pairings
+do this. For example, revisiting Eve, Frank, George, Harriet and Irma, consider
+the following pairings:
+
+* Round 1: Eve + George, Frank + Harriet, Irma sits out
+* Round 2: Frank + Irma, Eve + Harriet, George sits out
+* Round 3: Frank + George, Eve + Irma, Harriet sits out
+* Round 4: Eve + Frank, George + Irma, Harriet sits out again
+
+All of these pairings are valid, as nobody meets the same person twice,
+and nobody meets two others at the same time. However, it will now require
+two more rounds for everyone to meet, as poor Harriet has still not met George or
+Irma. In total, six rounds are required, though we already know that
+five are possible. A different choice in round 4 will not help, as there is no other
+way to hold two meetings at that time. 
+
+This example shows that the pairs problem is more difficult than
+maximum cardinality matching, because of the need to minimise the number
+of rounds. It is not enough to simply find a perfect matching: we must also
+find one that will allow further perfect matchings in subsequent rounds.
+
+My algorithm
+------------
+
+The algorithm used in my solver is the one you might use when trying to solve the
+problem on paper. Consider your students as letters, A, B, C, D etc., and a pair
+of students is a pair of letters, e.g. "AB", in which the first letter must always be smaller
+than the second.
+
+If there are an odd number of students, introduce "nobody" as an additional person
+to be paired, assigned the letter "X".
+
+Write a table of rounds and pairings.
+Always write the smallest pair that can fit (using dictionary order).
+
+For example:
+
+     round 1:  AB CD EX
+     round 2:  AC BE DX
+     round 3:  AD BX CE
+     round 4:  AE BD CX
+     round 5:  AX BC DE
+
+In round 2, after you write "AC BD", you find you have to backtrack, because while "BD" is
+valid, the only possibility for the final pair is "EX", which appeared in round 1.
+"BE" must be picked instead.
+
+This backtracking leads to the computational inefficiency of the solver (probably exponential), but
+I believe it also minimises the number of rounds. I have no mathematical proof, but it seems to me
+that the need to choose the smallest possible pair prevents bad allocations being made, because
+the search space of all possible pairings is filled systematically instead of arbitrarily.
+
+
+
+Implementation
+--------------
 
 The core of the solver is in solve.py. This works from an abstract
 representation of the problem (problem.py) and is tested by unit
