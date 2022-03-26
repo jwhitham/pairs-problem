@@ -61,12 +61,39 @@ class Grid:
         self.visit_related(y, True)
         self.grid[(x, y)].met = True
 
+    def __str__(self) -> None:
+        out: typing.List[str] = []
+        w = 5
+        blank = " ".center(w)
+        out.append(blank)
+        for x in range(1, self.num_people):
+            out.append(name_to_string(x).center(w))
+
+        for y in range(self.num_people - 1):
+            out.append("\n")
+            out.append(name_to_string(y).center(w))
+            for x in range(1, self.num_people):
+                if y >= x:
+                    out.append(blank)
+                elif self.grid[(x, y)].met:
+                    out.append("met".center(w))
+                elif self.grid[(x, y)].busy:
+                    out.append("bsy".center(w))
+                else:
+                    value = self.count_not_busy(x, y)
+                    out.append(str(value).center(w))
+
+        return "".join(out)
+
     def find_next_available(self) -> typing.Optional[Pair]:
         best_value = sys.maxsize
         best_x = -1
         best_y = -1
-        for x in range(1, self.num_people):
-            for y in range(x):
+        #for x in range(1, self.num_people):
+        #    for y in range(x):
+
+        for y in range(self.num_people - 1):
+            for x in range(y + 1, self.num_people):
                 if not self.grid[(x, y)].busy:
                     assert not self.grid[(x, y)].met
                     value = self.count_not_busy(x, y)
@@ -79,15 +106,26 @@ class Grid:
         else:
             return (best_x, best_y)
 
-    def find_pairs(self) -> Pairs:
+    def find_pairs(self, debug: bool) -> Pairs:
         pairs: Pairs = []
         self.reset_busy()
+        if debug:
+            print(self)
         p = self.find_next_available()
+        if debug:
+            print("choose", pairs_to_string([p]))
         while p is not None:
             (x, y) = p
             self.set_met(x, y)
             pairs.append((x, y))
+            if debug:
+                print(self)
             p = self.find_next_available()
+            if debug:
+                if p:
+                    print("choose", pairs_to_string([p]))
+                else:
+                    print("none left")
 
         return pairs
 
@@ -106,13 +144,17 @@ def pairs_to_string(pairs: Pairs) -> str:
     return "".join(out)
 
 
-def test(num_people: int) -> None:
+def test(num_people: int, debug: bool) -> None:
     g = Grid(num_people)
     met = set()
     for i in range(num_people - 1):
+        if debug:
+            print("")
+            print("round", i)
         busy = [False for i in range(num_people)]
-        pairs = g.find_pairs()
-        print("round {}: {}".format(i, pairs_to_string(pairs)))
+        pairs = g.find_pairs(debug)
+        if not debug:
+            print("round {}: {}".format(i, pairs_to_string(pairs)))
         assert len(pairs) == (num_people // 2)
         for (x, y) in pairs:
             assert 0 <= y < x < num_people
@@ -132,4 +174,4 @@ def test(num_people: int) -> None:
 
 for num_people in range(4, 100, 2):
     print("number of people = {}".format(num_people), flush=True)
-    test(num_people)
+    test(num_people, False)
