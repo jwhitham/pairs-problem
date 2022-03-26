@@ -138,63 +138,85 @@ class Grid:
         return pairs
 
     def can_solve(self, pairs: typing.List[Pairs]) -> bool:
-        target = self.num_people // 2
-        if len(pairs) >= target:
+        target_pairs = self.num_people // 2
+        if len(pairs) >= target_pairs:
             return True
-                
+
+        need_to_meet = set()
+        for x in range(1, self.num_people):
+            for y in range(x):
+                need_to_meet.add((y, x))
+
         busy = [False for i in range(self.num_people)]
         already_met = set()
         for x in range(1, self.num_people):
             for y in range(x):
                 if self.grid[(x, y)].met:
-                    already_met.add((x, y))
+                    assert y < x
                     already_met.add((y, x))
 
         test_pairs = pairs[:]
         for (x, y) in test_pairs:
             busy[x] = True
             busy[y] = True
-            already_met.add((x, y))
+            assert y < x
             already_met.add((y, x))
 
-        def allocate_next(i1: int, i2: int) -> bool:
-            # Find first person who can be allocated
-            some_i2_exists = False
-            while i1 < self.num_people:
-                if not busy[i1]:
-                    # i1 can be allocated
-                    while i2 < self.num_people:
-                        if (not busy[i2]) and ((i1, i2) not in already_met):
-                            # i2 can be allocated
-                            some_i2_exists = True
-                            test_pairs.append((i1, i2))
-                            busy[i1] = True
-                            busy[i2] = True
-                            
-                            if len(test_pairs) >= target:
-                                return True
+        need_to_meet = need_to_meet - already_met
 
-                            if allocate_next(i1, i2):
-                                return True
+        while len(need_to_meet) != 0:
+            def allocate_next(i1: int, i2: int) -> bool:
+                # Find first person who can be allocated
+                some_i2_exists = False
+                while i1 < self.num_people:
+                    if not busy[i1]:
+                        # i1 can be allocated
+                        while i2 < self.num_people:
+                            if (not busy[i2]) and ((i1, i2) not in already_met):
+                                # i2 can be allocated
+                                some_i2_exists = True
+                                test_pairs.append((i2, i1))
+                                busy[i1] = True
+                                busy[i2] = True
+                                
+                                if len(test_pairs) >= target_pairs:
+                                    return True
 
-                            test_pairs.pop()
-                            busy[i1] = False
-                            busy[i2] = False
+                                if allocate_next(i1, i2):
+                                    return True
 
-                        # advance to next i2
-                        i2 += 1
+                                test_pairs.pop()
+                                busy[i1] = False
+                                busy[i2] = False
 
-                if some_i2_exists:
-                    return False
+                            # advance to next i2
+                            i2 += 1
 
-                # advance to next p1
-                i1 += 1
-                i2 = i1 + 1
+                    if some_i2_exists:
+                        return False
 
-            # No complete solution was found
-            return False
+                    # advance to next p1
+                    i1 += 1
+                    i2 = i1 + 1
 
-        return allocate_next(0, 1)
+                # No complete solution was found
+                return False
+
+            if not allocate_next(0, 1):
+                # couldn't fill all pairs here
+                return False
+
+            for (x, y) in test_pairs:
+                assert y < x
+                already_met.add((y, x))
+                need_to_meet.discard((y, x))
+
+            for x in range(num_people):
+                busy[x] = False
+
+            test_pairs.clear()
+
+        return True
 
 def name_to_string(x: int) -> str:
     if x > 26:
