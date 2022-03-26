@@ -51,9 +51,14 @@ class Grid:
 
         return count
 
-    def count_not_busy(self, x: int, y: int) -> int:
+    def count_not_busy(self, x: int, y: int) -> typing.Tuple[int, int]:
         assert 0 <= y < x < self.num_people
-        return self.visit_related(x, False) + self.visit_related(y, False)
+        a = self.visit_related(x, False)
+        b = self.visit_related(y, False)
+        if a < b:
+            return (a, b)
+        else:
+            return (b, a)
 
     def set_met(self, x: int, y: int) -> None:
         assert 0 <= y < x < self.num_people
@@ -86,7 +91,7 @@ class Grid:
         return "".join(out)
 
     def find_next_available(self) -> typing.Optional[Pair]:
-        best_value = sys.maxsize
+        best_value = (sys.maxsize, sys.maxsize)
         best_x = -1
         best_y = -1
         #for x in range(1, self.num_people):
@@ -106,7 +111,7 @@ class Grid:
         else:
             return (best_x, best_y)
 
-    def find_pairs(self, debug: bool, workaround: bool) -> Pairs:
+    def find_pairs(self, debug: bool) -> Pairs:
         pairs: Pairs = []
         self.reset_busy()
         if debug:
@@ -116,12 +121,6 @@ class Grid:
             print("choose", pairs_to_string([p]))
         while p is not None:
             (x, y) = p
-            if pairs_to_string([p]) == "HL " and workaround:
-                (x, y) = p = (12, 9)
-                assert pairs_to_string([p]) == "JM "
-                assert not self.grid[p].busy
-                assert not self.grid[p].met
-
             self.set_met(x, y)
             pairs.append((x, y))
             if debug:
@@ -158,7 +157,7 @@ def test(num_people: int, debug: bool) -> None:
             print("")
             print("round", i)
         busy = [False for i in range(num_people)]
-        pairs = g.find_pairs(debug, (num_people == 18) and (i == 14))
+        pairs = g.find_pairs(debug)
         if not debug:
             print("round {}: {}".format(i, pairs_to_string(pairs)))
         assert len(pairs) == (num_people // 2)
