@@ -85,8 +85,10 @@ class Grid:
                 elif self.grid[(x, y)].busy:
                     out.append("bsy".center(w))
                 else:
-                    value = self.count_not_busy(x, y)
-                    out.append(str(value).center(w))
+                    (a, b) = self.count_not_busy(x, y)
+                    a = min(a, 9)
+                    b = min(b, 9)
+                    out.append("{},{}".format(a, b).center(w))
 
         return "".join(out)
 
@@ -125,6 +127,7 @@ class Grid:
             pairs.append((x, y))
             if debug:
                 print(self)
+            assert self.can_solve(pairs), pairs_to_string(pairs)
             p = self.find_next_available()
             if debug:
                 if p:
@@ -133,6 +136,65 @@ class Grid:
                     print("none left")
 
         return pairs
+
+    def can_solve(self, pairs: typing.List[Pairs]) -> bool:
+        target = self.num_people // 2
+        if len(pairs) >= target:
+            return True
+                
+        busy = [False for i in range(self.num_people)]
+        already_met = set()
+        for x in range(1, self.num_people):
+            for y in range(x):
+                if self.grid[(x, y)].met:
+                    already_met.add((x, y))
+                    already_met.add((y, x))
+
+        test_pairs = pairs[:]
+        for (x, y) in test_pairs:
+            busy[x] = True
+            busy[y] = True
+            already_met.add((x, y))
+            already_met.add((y, x))
+
+        def allocate_next(i1: int, i2: int) -> bool:
+            # Find first person who can be allocated
+            some_i2_exists = False
+            while i1 < self.num_people:
+                if not busy[i1]:
+                    # i1 can be allocated
+                    while i2 < self.num_people:
+                        if (not busy[i2]) and ((i1, i2) not in already_met):
+                            # i2 can be allocated
+                            some_i2_exists = True
+                            test_pairs.append((i1, i2))
+                            busy[i1] = True
+                            busy[i2] = True
+                            
+                            if len(test_pairs) >= target:
+                                return True
+
+                            if allocate_next(i1, i2):
+                                return True
+
+                            test_pairs.pop()
+                            busy[i1] = False
+                            busy[i2] = False
+
+                        # advance to next i2
+                        i2 += 1
+
+                if some_i2_exists:
+                    return False
+
+                # advance to next p1
+                i1 += 1
+                i2 = i1 + 1
+
+            # No complete solution was found
+            return False
+
+        return allocate_next(0, 1)
 
 def name_to_string(x: int) -> str:
     if x > 26:
@@ -158,8 +220,7 @@ def test(num_people: int, debug: bool) -> None:
             print("round", i)
         busy = [False for i in range(num_people)]
         pairs = g.find_pairs(debug)
-        if not debug:
-            print("round {}: {}".format(i, pairs_to_string(pairs)))
+        print("round {}: {}".format(i, pairs_to_string(pairs)))
         assert len(pairs) == (num_people // 2)
         for (x, y) in pairs:
             assert 0 <= y < x < num_people
