@@ -10,12 +10,21 @@ import sys
 Pair = typing.Tuple[int, int]
 Pairs = typing.List[Pair]
 
+class CantSolveError(Exception):
+    pass
+
 class Cell:
     def __init__(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
         self.met = False
         self.busy = False
+
+    def copy(self) -> "Cell":
+        c = Cell(self.x, self.y)
+        c.met = self.met
+        c.busy = self.busy
+        return c
 
 class Grid:
     def __init__(self, num_people: int) -> None:
@@ -25,6 +34,12 @@ class Grid:
             for y in range(x):
                 self.grid[(x, y)] = Cell(x, y)
 
+    def copy(self) -> "Grid":
+        g = Grid(self.num_people)
+        for x in range(1, num_people):
+            for y in range(x):
+                g.grid[(x, y)] = self.grid[(x, y)].copy()
+        return g
 
     def reset_busy(self) -> None:
         for x in range(1, self.num_people):
@@ -127,7 +142,8 @@ class Grid:
             pairs.append((x, y))
             if debug:
                 print(self)
-            assert self.can_solve(pairs), pairs_to_string(pairs)
+            if not self.can_solve(pairs):
+                raise CantSolveError()
             p = self.find_next_available()
             if debug:
                 if p:
@@ -241,7 +257,18 @@ def test(num_people: int, debug: bool) -> None:
             print("")
             print("round", i)
         busy = [False for i in range(num_people)]
-        pairs = g.find_pairs(debug)
+        g2 = g.copy()
+        try:
+            pairs = g.find_pairs(debug)
+        except CantSolveError:
+            debug = True
+            g = g2.copy()
+            try:
+                pairs = g.find_pairs(debug)
+            except CantSolveError as e:
+                raise e from None
+                
+
         print("round {}: {}".format(i, pairs_to_string(pairs)))
         assert len(pairs) == (num_people // 2)
         for (x, y) in pairs:
