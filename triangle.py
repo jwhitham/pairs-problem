@@ -107,51 +107,17 @@ class Grid:
 
         return "".join(out)
 
-    def find_next_available(self) -> typing.Optional[Pair]:
-        best_value = (sys.maxsize, sys.maxsize)
-        best_x = -1
-        best_y = -1
-        #for x in range(1, self.num_people):
-        #    for y in range(x):
-
+    def find_all_available(self) -> Pairs:
+        available: typing.List[typing.Tuple[int, int, int]] = []
         for y in range(self.num_people - 1):
             for x in range(y + 1, self.num_people):
                 if not self.grid[(x, y)].busy:
                     assert not self.grid[(x, y)].met
                     value = self.count_not_busy(x, y)
-                    if value < best_value:
-                        best_value = value
-                        best_x = x
-                        best_y = y
-        if best_x < 0:
-            return None
-        else:
-            return (best_x, best_y)
+                    available.append((value, x, y))
 
-    def find_pairs(self, debug: bool) -> Pairs:
-        pairs: Pairs = []
-        self.reset_busy()
-        if debug:
-            print(self)
-        p = self.find_next_available()
-        if debug:
-            print("choose", pairs_to_string([p]))
-        while p is not None:
-            (x, y) = p
-            self.set_met(x, y)
-            pairs.append((x, y))
-            if debug:
-                print(self)
-            if not self.can_solve(pairs):
-                raise CantSolveError()
-            p = self.find_next_available()
-            if debug:
-                if p:
-                    print("choose", pairs_to_string([p]))
-                else:
-                    print("none left")
-
-        return pairs
+        available.sort()
+        return [(x, y) for (_, x, y) in available]
 
     def can_solve(self, pairs: typing.List[Pairs]) -> bool:
         target_pairs = self.num_people // 2
@@ -248,6 +214,39 @@ def pairs_to_string(pairs: Pairs) -> str:
         out.append(" ")
     return "".join(out)
 
+def find_pairs(grid: Grid, debug: bool) -> Pairs:
+    grid.reset_busy()
+    (bt, pairs) = find_some_pairs(grid, debug, grid.num_people // 2)
+    print ("backtrack", bt, flush=True)
+
+    for p in pairs:
+        (x, y) = p
+        grid.set_met(x, y)
+
+    return pairs
+
+def find_some_pairs(grid: Grid, debug: bool, remaining: int) -> typing.Tuple[int, Pairs]:
+    if remaining == 0:
+        return (0, [])
+
+    assert remaining > 0
+    backtrack = 0
+
+    for p in grid.find_all_available():
+        (x, y) = p
+        copy_grid = grid.copy()
+        copy_grid.set_met(x, y)
+        (bt, pairs) = find_some_pairs(copy_grid, debug, remaining - 1)
+        backtrack += bt
+        if len(pairs) == (remaining - 1):
+            pairs.append(p)
+            return (backtrack, pairs)
+
+        backtrack += 1
+
+
+    return (backtrack, [])
+
 
 def test(num_people: int, debug: bool) -> None:
     g = Grid(num_people)
@@ -259,12 +258,12 @@ def test(num_people: int, debug: bool) -> None:
         busy = [False for i in range(num_people)]
         g2 = g.copy()
         try:
-            pairs = g.find_pairs(debug)
+            pairs = find_pairs(g, debug)
         except CantSolveError:
             debug = True
             g = g2.copy()
             try:
-                pairs = g.find_pairs(debug)
+                pairs = find_pairs(g, debug)
             except CantSolveError as e:
                 raise e from None
                 
