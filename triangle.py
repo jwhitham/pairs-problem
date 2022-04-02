@@ -14,6 +14,9 @@ Footprint = typing.List[int]
 class CantSolveError(Exception):
     pass
 
+class BacktrackError(Exception):
+    pass
+
 class Cell:
     def __init__(self, x: int, y: int) -> None:
         self.x = x
@@ -110,7 +113,7 @@ class Grid:
 
         return count
 
-    def count_not_busy(self, x: int, y: int) -> typing.Tuple[int, int]:
+    def calculate_availability(self, x: int, y: int) -> typing.Tuple[int, int]:
         assert 0 <= y < x < self.num_people
         a = self.visit_related(x, False)
         b = self.visit_related(y, False)
@@ -144,7 +147,7 @@ class Grid:
                 elif self.grid[(x, y)].busy_stack[-1]:
                     out.append("bsy".center(w))
                 else:
-                    (a, b) = self.count_not_busy(x, y)
+                    (a, b) = self.calculate_availability(x, y)
                     a = min(a, 9)
                     b = min(b, 9)
                     out.append("{},{}".format(a, b).center(w))
@@ -157,7 +160,11 @@ class Grid:
             for x in range(y + 1, self.num_people):
                 if not self.grid[(x, y)].busy_stack[-1]:
                     assert not self.grid[(x, y)].met_stack[-1]
-                    value = self.count_not_busy(x, y)
+                    (a, b) = self.calculate_availability(x, y)
+
+                    # For original algorithm, use value = (y, x) here
+                    # Availability: value = (a, b, y, x)
+                    value = (a, b, y, x)
                     available.append((value, x, y))
 
         if len(available) != 0:
@@ -185,14 +192,16 @@ class Grid:
                             len(set(fp)) != len(fp))
         return [(x, y) for (_, x, y) in available]
 
-    def find_pairs(self, debug: bool) -> Pairs:
+    def find_pairs(self, debug: bool, allow_bt: bool) -> Pairs:
         self.reset_busy()
 
         if debug:
             print(str(self))
 
-        (bt, pairs) = self.find_some_pairs(debug, self.num_people // 2)
+        (bt, pairs) = self.find_some_pairs(debug, self.num_people // 2, allow_bt)
         #print ("backtrack", bt, flush=True)
+        if bt and not allow_bt:
+            raise BacktrackError()
 
         for p in pairs:
             (x, y) = p
@@ -200,7 +209,7 @@ class Grid:
 
         return pairs
 
-    def find_some_pairs(self, debug: bool, remaining: int) -> typing.Tuple[int, Pairs]:
+    def find_some_pairs(self, debug: bool, remaining: int, allow_bt: bool) -> typing.Tuple[int, Pairs]:
         if remaining == 0:
             return (0, [])
 
@@ -217,10 +226,10 @@ class Grid:
 
             self.push()
             self.set_met(x, y)
-            (bt, pairs) = self.find_some_pairs(debug, remaining - 1)
+            (bt, pairs) = self.find_some_pairs(debug, remaining - 1, allow_bt)
             backtrack += bt
             if len(pairs) == (remaining - 1):
-                pairs.append(p)
+                pairs.insert(0, p)
                 if debug:
                     print(" " * indent, "solved", pairs_to_string([p]))
 
@@ -228,9 +237,9 @@ class Grid:
 
             if debug:
                 print(" " * indent, "pop", pairs_to_string([p]))
-            else:
-                raise CantSolveError()
 
+            if not allow_bt:
+                raise BacktrackError()
             backtrack += 1
             bad = False
             self.pop()
@@ -241,9 +250,11 @@ class Grid:
         return (backtrack, [])
 
 
-    def can_solve(self, pairs: typing.List[Pairs]) -> bool:
+    def can_solve(self, pairs: typing.List[Pairs], single_round: bool) -> bool:
         target_pairs = self.num_people // 2
         if len(pairs) >= target_pairs:
+            # Not valid for multiple rounds
+            assert single_round
             return True
 
         need_to_meet = set()
@@ -313,12 +324,14 @@ class Grid:
             for (x, y) in test_pairs:
                 assert y < x
                 already_met.add((y, x))
-                need_to_meet.discard((y, x))
+                need_to_meet.remove((y, x))
 
-            for x in range(num_people):
+            for x in range(self.num_people):
                 busy[x] = False
 
             test_pairs.clear()
+            if single_round:
+                return True
 
         return True
 
@@ -336,27 +349,27 @@ def pairs_to_string(pairs: Pairs) -> str:
         out.append(" ")
     return "".join(out)
 
-def test(num_people: int, debug: bool) -> None:
+def test(num_people: int) -> None:
     g = Grid(num_people)
     met = set()
     stop = False
     for i in range(num_people - 1):
-        if debug:
-            print("")
-            print("round", i)
         busy = [False for i in range(num_people)]
         g2 = g.copy()
+        if not g.can_solve([], True):
+            print("Problem has become unsolvable according to original algorithm", flush=True)
+
         try:
-            pairs = g.find_pairs(debug)
-        except CantSolveError:
-            debug = True
+            pairs = g.find_pairs(False, False)
+        except BacktrackError:
             g = g2.copy()
+            print("Problem can't be solved without backtracking", flush=True)
             try:
-                pairs = g.find_pairs(debug)
-                stop = True
-            except CantSolveError as e:
-                raise e from None
-                
+                pairs = g.find_pairs(False, True)
+            except CantSolveError:
+                print("Problem not solvable by available heuristic", flush=True)
+                g = g2.copy()
+                pairs = g.find_pairs(True, True)
 
         print("round {}: {}".format(i, pairs_to_string(pairs)), flush=True)
         assert len(pairs) == (num_people // 2)
@@ -381,4 +394,4 @@ def test(num_people: int, debug: bool) -> None:
 
 for np in range(4, 100, 2):
     print("number of people = {}".format(np), flush=True)
-    test(np, False)
+    test(np)

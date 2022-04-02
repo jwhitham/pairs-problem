@@ -127,9 +127,52 @@ valid, the only possibility for the final pair is "EX", which appeared in round 
 "BE" must be picked instead.
 
 This backtracking leads to the computational inefficiency of the solver (probably exponential), but
-I believe it also minimises the number of rounds. I have no mathematical proof, but it seems to me
-that the need to choose the smallest possible pair prevents bad allocations being made, because
-the search space of all possible pairings is filled systematically instead of arbitrarily.
+when combined with the need to choose the smallest possible pairs that fill each
+round, it also appears to find an optimal allocation for all rounds (solving Problem 1).
+However, there is no proof of this. The search for a counter-example is difficult because
+the algorithm's time complexity is bad, and it's not possible to test large numbers of students.
+
+Improved algorithm experiments
+------------------------------
+
+In triangle.py branch I have experimented with various ways to improve the efficiency of the solver.
+The best solution would be to make the correct pairing choices on the first attempt, without any need
+to backtrack.
+
+The original algorithm searches for pairings based only on student numbers, so it
+sorts the possible pairs using the following priority function, and tries the smallest
+value first:
+
+    priority(S1, S2) = (min(S1, S2), max(S1, S2))
+
+I tried evaluating the _availability_ of each student, defined as how many other students they
+can still meet. I prioritised possible pairs using this availablity, with the least available student's
+availability appearing first in the sort key, then the other student's availability, and then the
+pair itself (smallest student number, then largest)):
+
+    priority1(S1, S2) = (min(availability(S1), availability(S2)),
+                         max(availability(S1), availability(S2)),
+                         min(S1, S2),
+                         max(S1, S2))
+
+Always choosing the smallest priority1 pair will lead to an optimal solution to Problem 1, without
+backtracking, for all N up to 18. 
+
+However, with N=20, the algorithm makes an incorrect choice in some early round, leading to an impossible
+situation in the 18th round. In the 18th round, each of the students must still meet two others. If
+I draw a graph of who can meet, I find that the students form two chains, one containing 9 people,
+the other containing 11:
+
+    A - S - F - M - L - D - Q - E - T - A
+    B - I - G - N - K - H - R - J - O - C - P - B
+
+As these chains have odd-numbered lengths, it is impossible for all students
+to pair up. An optimal allocation can't be made for that round, two people will be
+left out, and since the algorithm cannot backtrack to an earlier round, it fails.
+Problem 1 is not solved.
+
+An improved algorithm needs more thought - but the fact that chains of even-numbered length must exist
+in later rounds may be useful.
 
 
 
