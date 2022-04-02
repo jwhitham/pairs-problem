@@ -9,6 +9,7 @@ import sys
 
 Pair = typing.Tuple[int, int]
 Pairs = typing.List[Pair]
+Footprint = typing.List[int]
 
 class CantSolveError(Exception):
     pass
@@ -63,6 +64,31 @@ class Grid:
         for x in range(1, self.num_people):
             for y in range(x):
                 self.grid[(x, y)].busy_stack = [self.grid[(x, y)].met_stack[-1]]
+
+    def partial_footprint(self, cr: int) -> Footprint:
+        assert 0 <= cr < self.num_people
+        footprint: Footprint = []
+
+        # Column cr, downwards (height of column cr is cr)
+        for i in range(cr):
+            if not self.grid[(cr, i)].busy_stack[-1]:
+                footprint.append(i)
+
+        # Row y, across
+        for i in range(cr + 1, self.num_people):
+            if not self.grid[(i, cr)].busy_stack[-1]:
+                footprint.append(i)
+
+        return footprint 
+
+    def footprint(self, x: int, y: int) -> Footprint:
+        footprint = self.partial_footprint(x)
+        footprint.extend(self.partial_footprint(y))
+        footprint.remove(x)
+        footprint.remove(y)
+        assert not x in footprint
+        assert not y in footprint
+        return footprint
 
     def visit_related(self, cr: int, mark_busy: bool) -> int:
         assert 0 <= cr < self.num_people
@@ -152,7 +178,11 @@ class Grid:
                     if a != 0:
                         print(" " * indent, "visit_related", name_to_string(y), a)
                 for (score, x, y) in available:
-                    print(" " * indent, "choice", score, pairs_to_string([(x, y)]))
+                    fp = self.footprint(x, y)
+
+                    print(" " * indent, "choice", score, pairs_to_string([(x, y)]),
+                            ''.join([name_to_string(b) for b in fp]),
+                            len(set(fp)) != len(fp))
         return [(x, y) for (_, x, y) in available]
 
     def find_pairs(self, debug: bool) -> Pairs:
