@@ -65,28 +65,43 @@ class State:
         return ''.join(out)
 
 
-def form_pairs(num_people: int) -> None:
+def form_pairs(num_people: int) -> typing.List[str]:
     pairs_expected: PairSet = set()
     for a in range(num_people - 1):
         for b in range(a + 1, num_people):
             pairs_expected.add((a, b))
 
+    out: typing.List[str] = []
     s = State(num_people)
     division = num_people // 2
+    j = 0
     while division >= 1:
         for i in range(division):
-            print("division {} round {}".format(division, i))
-            print(s)
+            #print("division {} round {}".format(division, i))
+            #print(str(s))
+            j += 1
+            out.append("round {}: ".format(j))
             for p in s.get_pairs():
+                out.append(pairs_to_string([p]))
                 assert p in pairs_expected, pairs_to_string([p])
                 pairs_expected.remove(p)
             s.rotate(division)
+            out.append("\n")
 
         s.crossover()
         division = division // 2
 
     assert len(pairs_expected) == 0
-    print("ok")
+    return out
+
+def test() -> None:
+    out: typing.List[str] = []
+    for i in range(2, 11):
+        print("test with {} people".format(1 << i))
+        out.append("test with {} people\n".format(1 << i))
+        out.extend(form_pairs(1 << i))
+        out.append("\n")
+        open("out.txt", "wt").write("".join(out))
 
 if __name__ == "__main__":
-    form_pairs(1 << 8)
+    test()
