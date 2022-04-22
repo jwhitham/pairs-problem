@@ -50,7 +50,7 @@ class State:
             pairs.append((a, b))
         return pairs
 
-    def __str__(self) -> None:
+    def __str__(self) -> str:
         out: typing.List[str] = []
         for i in range(self.num_pairs):
             out.append(name_to_string(self.row1[i]))

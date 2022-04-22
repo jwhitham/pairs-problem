@@ -4,7 +4,7 @@ import sys
 
 Pair = typing.Tuple[int, int]
 Pairs = typing.List[Pair]
-Choice = typing.List[typing.Tuple[typing.Any, int, int, int]]
+Choice = typing.Tuple[typing.Any, int, int, int]
 
 class Cell:
     def __init__(self, x: int, y: int) -> None:
@@ -68,7 +68,7 @@ class Slice:
         self.grid[(x, y)].met_stack[-1] = True
         self.pairs.append((x, y))
 
-    def __str__(self) -> None:
+    def __str__(self) -> str:
         out: typing.List[str] = []
         w = 5
         blank = " ".center(w)
@@ -144,7 +144,7 @@ class Prism:
             for s in self.slices:
                 s.set_met_elsewhere(x, y)
 
-    def __str__(self) -> None:
+    def __str__(self) -> str:
         out: typing.List[str] = []
         for s in self.slices:
             out.append(str(s))

@@ -128,7 +128,7 @@ class Grid:
         self.visit_related(y, True)
         self.grid[(x, y)].met_stack[-1] = True
 
-    def __str__(self) -> None:
+    def __str__(self) -> str:
         out: typing.List[str] = []
         w = 5
         blank = " ".center(w)
@@ -155,7 +155,7 @@ class Grid:
         return "".join(out)
 
     def find_all_available(self, debug: bool, remaining: int) -> Pairs:
-        available: typing.List[typing.Tuple[int, int, int]] = []
+        available: typing.List[typing.Tuple[typing.Any, int, int]] = []
         for y in range(self.num_people - 1):
             for x in range(y + 1, self.num_people):
                 if not self.grid[(x, y)].busy_stack[-1]:
@@ -250,7 +250,7 @@ class Grid:
         return (backtrack, [])
 
 
-    def can_solve(self, pairs: typing.List[Pairs], single_round: bool) -> bool:
+    def can_solve(self, pairs: Pairs, single_round: bool) -> bool:
         target_pairs = self.num_people // 2
         if len(pairs) >= target_pairs:
             # Not valid for multiple rounds
