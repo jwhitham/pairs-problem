@@ -6,12 +6,15 @@ Pair = typing.Tuple[int, int]
 Pairs = typing.List[Pair]
 Choice = typing.Tuple[typing.Any, int, int, int]
 
+class CantSolveError(Exception):
+    pass
+
 class Cell:
     def __init__(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
-        self.met_stack: typing.List[bool] = [False]
-        self.busy_stack: typing.List[bool] = [False]
+        self.met = False
+        self.busy = False
 
 class Slice:
     def __init__(self, z: int, num_people: int) -> None:
@@ -23,28 +26,23 @@ class Slice:
             for y in range(x):
                 self.grid[(x, y)] = Cell(x, y)
 
-    def reset_busy(self) -> None:
-        for x in range(1, self.num_people):
-            for y in range(x):
-                self.grid[(x, y)].busy_stack = [self.grid[(x, y)].met_stack[-1]]
-
     def visit_related(self, cr: int, mark_busy: bool) -> int:
         assert 0 <= cr < self.num_people
         count = 0
 
         # Column cr, downwards (height of column cr is cr)
         for i in range(cr):
-            if not self.grid[(cr, i)].busy_stack[-1]:
+            if not self.grid[(cr, i)].busy:
                 count += 1
             if mark_busy:
-                self.grid[(cr, i)].busy_stack[-1] = True
+                self.grid[(cr, i)].busy = True
 
         # Row y, across
         for i in range(cr + 1, self.num_people):
-            if not self.grid[(i, cr)].busy_stack[-1]:
+            if not self.grid[(i, cr)].busy:
                 count += 1
             if mark_busy:
-                self.grid[(i, cr)].busy_stack[-1] = True
+                self.grid[(i, cr)].busy = True
 
         return count
 
@@ -58,14 +56,14 @@ class Slice:
             return (b, a)
 
     def set_met_elsewhere(self, x: int, y: int) -> None:
-        self.grid[(x, y)].met_stack[-1] = True
-        self.grid[(x, y)].busy_stack[-1] = True
+        self.grid[(x, y)].met = True
+        self.grid[(x, y)].busy = True
 
     def set_met(self, x: int, y: int) -> None:
         assert 0 <= y < x < self.num_people
         self.visit_related(x, True)
         self.visit_related(y, True)
-        self.grid[(x, y)].met_stack[-1] = True
+        self.grid[(x, y)].met = True
         self.pairs.append((x, y))
 
     def __str__(self) -> str:
@@ -85,9 +83,9 @@ class Slice:
             for x in range(1, self.num_people):
                 if y >= x:
                     out.append(blank)
-                elif self.grid[(x, y)].met_stack[-1]:
+                elif self.grid[(x, y)].met:
                     out.append("met".center(w))
-                elif self.grid[(x, y)].busy_stack[-1]:
+                elif self.grid[(x, y)].busy:
                     out.append("bsy".center(w))
                 else:
                     (a, b) = self.calculate_availability(x, y)
@@ -102,13 +100,13 @@ class Slice:
         available: typing.List[Choice] = []
         for y in range(self.num_people - 1):
             for x in range(y + 1, self.num_people):
-                if not self.grid[(x, y)].busy_stack[-1]:
-                    assert not self.grid[(x, y)].met_stack[-1]
+                if not self.grid[(x, y)].busy:
+                    assert not self.grid[(x, y)].met
                     (a, b) = self.calculate_availability(x, y)
 
                     # For original algorithm, use value = (y, x) here
                     # Availability: value = (a, b, y, x)
-                    value = (a, b, y, x)
+                    value = (a, b, self.z, y, x)
                     available.append((value, x, y, self.z))
 
         return available
@@ -127,22 +125,31 @@ class Prism:
 
         return available
 
-    def reset_busy(self) -> None:
-        for s in self.slices:
-            s.reset_busy()
-
     def fill(self) -> None:
-
-        self.reset_busy()
         todo_count = (self.num_people // 2) * (self.num_people - 1)
         while todo_count > 0:
             todo_count -= 1
             available = self.find_choices()
-            assert len(available) > 0
+            if len(available) == 0:
+                raise CantSolveError()
             (_, x, y, z) = min(available)
             self.slices[z].set_met(x, y)
             for s in self.slices:
                 s.set_met_elsewhere(x, y)
+
+    def check(self) -> None:
+        all_pairs: Pairs = []
+        assert len(self.slices) == (self.num_people - 1)
+        for sl in self.slices:
+            assert (len(sl.pairs) * 2) == self.num_people
+            all_pairs.extend(sl.pairs)
+
+        all_pairs.sort()
+        (x1, y1) = (-1, -1)
+        for (x, y) in all_pairs:
+            assert 0 <= y < x < self.num_people
+            assert (x, y) != (x1, y1)
+            (x1, y1) = (x, y)
 
     def __str__(self) -> str:
         out: typing.List[str] = []
@@ -168,6 +175,12 @@ def pairs_to_string(pairs: Pairs) -> str:
 
 
 if __name__ == "__main__":
-    t = Prism(32)
-    t.fill()
-    print(str(t))
+    for i in range(4, 40, 2):
+        print(i, flush=True)
+        t = Prism(i)
+        try:
+            t.fill()
+        except CantSolveError as e:
+            print(str(t))
+            raise e from None
+        t.check()
